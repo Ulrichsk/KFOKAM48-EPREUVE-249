@@ -118,3 +118,35 @@ l'expiration sur l'unicité), un second vote ne crée **aucune** seconde ligne
 (`countBySession_Id`), un code saisi en minuscules avec des espaces est accepté, et un
 étudiant de la promotion 2 sur une session de la promotion 1 reçoit `403 ACCES_REFUSE`.
 `cd frontend && npm run build` → `tsc --noEmit` strict puis build Vite réussis.
+
+---
+
+## Étape 2 — issue 04 « Bloquer les tentatives de devinette du code »
+
+**Fait :** blocage après cinq erreurs (EF13, RG5, Q4) : objet de valeur pur
+`EtatTentativesCode` (seuil de 5, blocage de 2 minutes, compteur remis à zéro au moment du
+blocage pour que l'étudiant ait cinq nouvelles tentatives après le délai), entité
+`TentativeCode` et son repository, et surtout `CompteurTentativesCode`, dont les trois
+opérations s'exécutent en transaction séparée (`REQUIRES_NEW`) : une exception métier annule
+la transaction de la tentative, donc sans transaction distincte l'incrément serait perdu et
+le blocage ne se déclencherait jamais. `PresenceService` a été réordonné (étudiant, blocage,
+code, clôture, expiration, promotion, unicité) et compte désormais les échecs `CODE_INCONNU`
+et `CODE_EXPIRE` tout en remettant le compteur à zéro sur une réussite. `D3.md` est passé en
+v1.1 (ordre réel des contrôles + scénario `429`), RG5 a été précisée, et l'aide de l'écran
+Étudiant mentionne le blocage.
+
+**Blocage :** ~10 min sur un démarrage de contexte Spring refusé — `findByEtudiant_Id`
+échouait avec « No property 'etudiant' found for type 'TentativeCode' », parce que cette
+entité mappe une colonne simple `etudiantId` et non une association JPA (contrairement à
+`Presence`). Le symptôme était trompeur : les 26 tests d'intégration échouaient tous au
+chargement du contexte, avec pour seul message « Failed to load ApplicationContext ». La cause
+racine n'est apparue qu'en filtrant les `Caused by` de la sortie Maven. Corrigé en
+`findByEtudiantId`.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **41 tests** (15 unitaires +
+26 d'intégration). Assertions clés : après 5 échecs, la 6ᵉ tentative renvoie `429` et le
+compteur en base est relu pour prouver que l'incrément a bien survécu au rollback ; le bon
+code ne contourne pas le blocage (`429`) ; après l'échéance du blocage, la tentative est de
+nouveau traitée (`400 CODE_INCONNU`) ; une réussite remet le compteur à zéro ; un autre
+étudiant n'est pas affecté (H7). `cd frontend && npm run build` → `tsc --noEmit` strict puis
+build Vite réussis.

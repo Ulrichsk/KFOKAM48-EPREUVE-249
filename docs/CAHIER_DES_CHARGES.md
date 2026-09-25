@@ -266,7 +266,7 @@ entrée expose au minimum `id`, `nom` et `prenom`.
 | **RG2** | Le code expire 15 minutes après l'ouverture de la session : `expirationAt = ouvertureAt + 15 min`. | Q2 |
 | **RG3** | Une présence ne peut être marquée que pendant la validité du code et tant que la session n'est pas clôturée. | Q2, Q3 |
 | **RG4** | Un étudiant n'a au plus qu'une présence par session : l'unicité est garantie par contrainte en base, pas seulement par un test applicatif. | Q2, contrat (`409 DEJA_PRESENT`) |
-| **RG5** | Cinq tentatives de code infructueuses consécutives bloquent l'étudiant pendant 2 minutes (`429 TROP_DE_TENTATIVES`) ; une réussite remet le compteur à zéro. | Q4 |
+| **RG5** | Cinq tentatives de code infructueuses consécutives bloquent l'étudiant pendant 2 minutes (`429 TROP_DE_TENTATIVES`) ; une réussite remet le compteur à zéro, et le blocage lui-même le remet à zéro afin que l'étudiant dispose de cinq nouvelles tentatives après le délai. C'est la sixième tentative qui reçoit le `429`, la cinquième renvoyant encore son erreur d'origine. | Q4 ; précisions apportées à l'issue 04 |
 | **RG6** | L'autoévaluation est interdite : un étudiant ne peut jamais relire son propre exercice, ni par tirage, ni par assignation manuelle (`403 AUTO_EVALUATION_INTERDITE`). | Q5 |
 | **RG7** | Un exercice a exactement un relecteur : contrainte d'unicité sur l'exercice dans la table des relectures. | Q6 |
 | **RG8** | Le relecteur est tiré au sort par le système parmi les étudiants ayant une présence à la session de l'exercice, **quelle que soit la source** de cette présence. | Q7 + décision section 7 |
