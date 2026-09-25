@@ -1,16 +1,18 @@
 import { useState } from 'react'
 import { OuvrirSession } from './pages/OuvrirSession'
 import { MarquerPresence } from './pages/MarquerPresence'
+import { DeposerExercice } from './pages/DeposerExercice'
 import { ListeEtudiants } from './pages/ListeEtudiants'
 
-type Onglet = 'session' | 'presence' | 'etudiants'
+type Onglet = 'session' | 'presence' | 'depot' | 'etudiants'
 
 /**
  * Racine de l'application.
  *
- * v0.2 : ouvrir une session (EF1), marquer sa presence (EF2) et consulter la liste
- * des etudiants (EF15). Les ecrans du relecteur et le tableau de bord arrivent avec
- * les issues suivantes, dans l'ordre du backlog (docs/issues/README.md).
+ * v0.3 : ouvrir une session (EF1), marquer sa presence (EF2), deposer le lien de son
+ * exercice (EF5) et consulter la liste des etudiants (EF15). Les ecrans du relecteur,
+ * le tirage au sort et le tableau de bord arrivent avec les issues suivantes, dans
+ * l'ordre du backlog (docs/issues/README.md).
  */
 export function App() {
   const [onglet, setOnglet] = useState<Onglet>('session')
@@ -39,6 +41,13 @@ export function App() {
         </button>
         <button
           type="button"
+          className={onglet === 'depot' ? 'onglet actif' : 'onglet'}
+          onClick={() => setOnglet('depot')}
+        >
+          Etudiant — deposer mon exercice
+        </button>
+        <button
+          type="button"
           className={onglet === 'etudiants' ? 'onglet actif' : 'onglet'}
           onClick={() => setOnglet('etudiants')}
         >
@@ -48,10 +57,11 @@ export function App() {
 
       {onglet === 'session' && <OuvrirSession />}
       {onglet === 'presence' && <MarquerPresence />}
+      {onglet === 'depot' && <DeposerExercice />}
       {onglet === 'etudiants' && <ListeEtudiants />}
 
       <footer className="pied">
-        <p>Version 0.2 — socle, ouverture de session et marquage de presence.</p>
+        <p>Version 0.3 — socle, sessions, presence et depot d'exercices.</p>
       </footer>
     </main>
   )

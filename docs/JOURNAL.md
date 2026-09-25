@@ -150,3 +150,30 @@ code ne contourne pas le blocage (`429`) ; après l'échéance du blocage, la te
 nouveau traitée (`400 CODE_INCONNU`) ; une réussite remet le compteur à zéro ; un autre
 étudiant n'est pas affecté (H7). `cd frontend && npm run build` → `tsc --noEmit` strict puis
 build Vite réussis.
+
+---
+
+## Étape 2 — issue 05 « Déposer le lien de son exercice »
+
+**Fait :** `POST /api/exercices` conforme au contrat (201 avec `{ id, statut }` ; `400
+LIEN_INVALIDE` ; `409 EXERCICE_DEJA_DEPOSE`), avec l'entité `Exercice` (statut
+`DEPOSE`/`EN_ATTENTE`/`SANS_RELECTEUR`/`RELU`, et `remplacerLien` déjà prévu pour l'issue 06),
+un composant pur `ValidateurLien` pour RG22, et un service dont l'ordre de contrôles est
+lien → session → étudiant → clôture → promotion → unicité. Le statut renvoyé est
+`EN_ATTENTE`, le tirage au sort de l'issue 07 pourra le faire basculer en `SANS_RELECTEUR`.
+Côté frontend : écran Étudiant de dépôt (nom choisi dans la liste, numéro de session, lien)
+avec états de chargement, d'erreur et de succès, et traduction du statut renvoyé par l'API.
+
+**Blocage :** aucun blocage technique. Un point d'ergonomie à assumer devant le client : le
+contrat impose `{ sessionId, etudiantId, lien }`, donc l'étudiant doit connaître le numéro de
+session. C'est cohérent puisque l'écran du formateur l'affiche déjà (« Session #N »), mais
+cela mérite d'être signalé — le code de présence, lui, ne suffit pas à identifier la session
+pour un dépôt.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **71 tests** (37 unitaires,
+dont 22 tests paramétrés sur RG22, et 34 d'intégration). Assertions clés : un dépôt est
+accepté sur une session dont le code a expiré depuis 20 minutes (Q12, RG15) ; un second
+dépôt sur la même session renvoie `409` avec **une seule** ligne en base ; quatre formes de
+lien invalide (absent, relatif, schéma détourné, trop long) sont refusées en
+`400 LIEN_INVALIDE` ; dépôt refusé sur session close et pour un étudiant d'une autre
+promotion. `cd frontend && npm run build` → `tsc --noEmit` strict puis build Vite réussis.
