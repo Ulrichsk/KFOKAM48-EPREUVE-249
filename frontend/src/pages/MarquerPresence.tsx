@@ -61,7 +61,8 @@ export function MarquerPresence() {
       <h2>Marquer ma presence</h2>
       <p className="aide">
         Le code est celui dicte par le formateur. Il ne fonctionne que 15 minutes apres
-        l&apos;ouverture de la session, et une seule fois par etudiant.
+        l&apos;ouverture de la session, et une seule fois par etudiant. Apres cinq erreurs,
+        la saisie est bloquee deux minutes.
       </p>
 
       <form onSubmit={soumettre} className="formulaire">
