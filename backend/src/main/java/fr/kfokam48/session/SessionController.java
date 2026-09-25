@@ -2,6 +2,7 @@ package fr.kfokam48.session;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -34,5 +35,15 @@ public class SessionController {
     @ResponseStatus(HttpStatus.CREATED)
     public SessionCreee ouvrirSession(@Valid @RequestBody DemandeOuvertureSession demande) {
         return sessionService.ouvrirSession(demande);
+    }
+
+    /**
+     * {@code POST /api/sessions/{id}/cloture} — le formateur ferme la session (EF14,
+     * RG21) : plus aucun depot ni presence, les relectures deja assignees restent
+     * rendables. Idempotent : une seconde clôture repond 200 avec la meme date.
+     */
+    @PostMapping("/{id}/cloture")
+    public SessionCloturee cloturerSession(@PathVariable Long id) {
+        return sessionService.cloturerSession(id);
     }
 }
