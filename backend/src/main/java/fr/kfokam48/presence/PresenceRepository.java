@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 /** Acces aux presences : aucune logique metier ici. */
 public interface PresenceRepository extends JpaRepository<Presence, Long> {
@@ -33,6 +34,12 @@ public interface PresenceRepository extends JpaRepository<Presence, Long> {
      * table reste la garante de l'invariant (cf. {@link Presence}).
      */
     boolean existsBySession_IdAndEtudiant_Id(Long sessionId, Long etudiantId);
+
+    /**
+     * Presence d'un couple (session, etudiant), sert a verifier la source conservee
+     * apres un refus de doublon (RG4 : la premiere ecriture fait foi).
+     */
+    Optional<Presence> findBySession_IdAndEtudiant_Id(Long sessionId, Long etudiantId);
 
     /** Nombre de presences d'une session, utilise par les tests et le tableau. */
     long countBySession_Id(Long sessionId);

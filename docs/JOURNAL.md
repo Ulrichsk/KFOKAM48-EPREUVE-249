@@ -4,6 +4,33 @@ Une entrée par étape, toujours en trois lignes : **fait**, **blocage (durée)*
 
 ---
 
+## Étape 2 — issue 14 « Le formateur ajoute une présence à la main »
+
+**Fait :** `POST /api/sessions/{id}/presences` conforme au contrat (201 avec
+`{ id, sessionId, etudiantId, source = "FORMATEUR" }` ; `409 DEJA_PRESENT` quelle que soit la
+source de la première présence ; `409 SESSION_CLOTUREE` ; `403 ACCES_REFUSE` hors promotion ;
+`404 SESSION_INTROUVABLE` / `ETUDIANT_INCONNU` ; `400 CHAMP_MANQUANT`). La présence porte
+`source = FORMATEUR` (Q14 : l'ajout doit se voir, le tableau l'expose à part via
+`presencesFormateur`) et reste éligible au tirage (§7.2). L'expiration du code ne joue ici
+aucun rôle : seule la clôture ferme les présences (RG21) — un oubli se régularise jusqu'à la
+clôture. Le contrôleur devient multi-chemins (`/api/presences` et
+`/api/sessions/{id}/presences`) sans `@RequestMapping` de classe, la délégation restant
+identique.
+
+**Blocage :** la branche avait d'abord été créée depuis `main`, qui ne porte pas encore la
+clôture (#13) : le test d'ajout après clôture répondait `404` — branche rebâtie sur
+`feature/cloturer-session`. Second rat : les étudiants 13–16 du seed appartiennent à la
+promotion 2, d'où des `403` inattendus — scénario déplacé sur les étudiants 3 (promotion 1,
+jamais présent ailleurs) et 14 (contrôle RG19). (~15 min au total.)
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **130 tests** (43 unitaires
++ 87 d'intégration), dont `PresenceManuelleIT` (7 tests) : ajout nominal avec clés JSON
+exactes et `source = FORMATEUR`, étudiant puis formateur refusés en doublon avec source
+d'origine conservée en base, clôture et hors-promotion refusées sans écriture, 404 et 400
+conformes.
+
+---
+
 ## Étape 2 — issue 13 « Le formateur clôture la session : plus de dépôts ni de présences, les relectures déjà assignées restent rendables »
 
 **Fait :** `POST /api/sessions/{id}/cloture` conforme au contrat (200 avec le DTO

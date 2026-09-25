@@ -142,6 +142,74 @@ public class PresenceService {
     }
 
     /**
+     * Le formateur ajoute a la main la presence d'un etudiant (EF4, Q14, RG17).
+     *
+     * <p>Ordre des controles, convention du projet : ressources visees (404), etat de
+     * la session (409), coherence de la demande (403), unicite (409).</p>
+     *
+     * <p>Deux regles distinguent cet ajout du marquage par code : la presence creee
+     * porte {@code source = FORMATEUR} et doit « se voir » comme telle (Q14, RG17 —
+     * le tableau l'expose a part via {@code presencesFormateur}) ; et l'expiration du
+     * code ne joue ici aucun role — seul l'etat de la session ferme les presences
+     * (RG21) : un etudiant oublie ce soir doit pouvoir etre regularise jusqu'a la
+     * clôture. L'eligibilite au tirage n'est pas filtree par la source (decision 7.2).</p>
+     *
+     * @throws RessourceIntrouvableException 404 {@code SESSION_INTROUVABLE} ou {@code ETUDIANT_INCONNU}
+     * @throws ErreurMetier 409 {@code SESSION_CLOTUREE} si le formateur a clos la session
+     * @throws ErreurMetier 403 {@code ACCES_REFUSE} si l'etudiant n'est pas de la promotion (RG19)
+     * @throws ErreurMetier 409 {@code DEJA_PRESENT} si une presence existe deja, quelle que soit sa source (RG4)
+     */
+    @Transactional
+    public PresenceCreee ajouterPresenceManuelle(Long sessionId, Long etudiantId) {
+        LocalDateTime maintenant = LocalDateTime.now(horloge);
+
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        CodeErreur.SESSION_INTROUVABLE,
+                        "La session demandee est inconnue."));
+
+        Etudiant etudiant = etudiantRepository.findById(etudiantId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        CodeErreur.ETUDIANT_INCONNU,
+                        "L'etudiant demande est inconnu."));
+
+        // RG21 : apres cloture, plus aucune presence n'est acceptee — ajout manuel
+        // compris, sinon la regularisation deviendrait une reecriture de l'histoire.
+        if (session.estCloturee()) {
+            throw new ErreurMetier(
+                    CodeErreur.SESSION_CLOTUREE,
+                    HttpStatus.CONFLICT,
+                    "Cette session est close : la presence ne peut plus etre marquee.");
+        }
+
+        // RG19 : l'etudiant regularise appartient a la promotion de la session.
+        if (!Objects.equals(etudiant.getPromotionId(), session.getPromotionId())) {
+            throw new ErreurMetier(
+                    CodeErreur.ACCES_REFUSE,
+                    HttpStatus.FORBIDDEN,
+                    "Cet etudiant n'appartient pas a la promotion de la session.");
+        }
+
+        // RG4 : une seule presence par etudiant et par session, quelle que soit la
+        // source — l'ajout manuel ne fait pas doublon avec une saisie de l'etudiant.
+        if (presenceRepository.existsBySession_IdAndEtudiant_Id(session.getId(), etudiant.getId())) {
+            throw dejaPresent();
+        }
+
+        Presence presence;
+        try {
+            presence = presenceRepository.saveAndFlush(
+                    new Presence(session, etudiant, SourcePresence.FORMATEUR, maintenant));
+        } catch (DataIntegrityViolationException conflit) {
+            // Deux ajouts simultanes pour le meme couple (session, etudiant) :
+            // la contrainte d'unicite de la table refuse la seconde ligne.
+            throw dejaPresent();
+        }
+
+        return PresenceCreee.depuis(presence);
+    }
+
+    /**
      * Le code est dicte puis recopie a la main : les espaces superflus et la casse
      * ne doivent pas faire echouer une saisie correcte (hypothese H9).
      */
