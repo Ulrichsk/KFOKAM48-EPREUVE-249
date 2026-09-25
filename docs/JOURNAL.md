@@ -177,3 +177,47 @@ dépôt sur la même session renvoie `409` avec **une seule** ligne en base ; qu
 lien invalide (absent, relatif, schéma détourné, trop long) sont refusées en
 `400 LIEN_INVALIDE` ; dépôt refusé sur session close et pour un étudiant d'une autre
 promotion. `cd frontend && npm run build` → `tsc --noEmit` strict puis build Vite réussis.
+
+---
+
+## Étape 2 — issue 07 « Trouver automatiquement un relecteur par tirage au sort »
+
+**Fait :** le tirage a lieu **dans la transaction de dépôt** (RG9, décision §7.3) : au lieu
+d'exposer un statut `DEPOSE`, `ExerciceService.deposer` crée l'exercice, tire immédiatement un
+relecteur, puis écrit le statut définitif — `EN_ATTENTE` avec une relecture
+`assigne_par = SYSTEME` si un candidat existe, `SANS_RELECTEUR` sinon (RG10, décision §7.4).
+L'éligibilité tient en **une requête** (`PresenceRepository.findEligiblesPourTirage`) :
+présence à la session de l'exercice, **quelle que soit la source** (ETUDIANT ou FORMATEUR,
+décision §7.2), auteur exclu (Q5, RG6). Ajouts : `StatutRelecture`, `AssignePar`, entité
+`Relecture` (association `OneToOne` sur `exercice_id` unique, qui traduit RG7 par la
+structure et non par une convention), `RelectureRepository`, `TirageAuSort` (classe pure
+`SecureRandom`, testable sans Spring) et `TirageRelecteur` (assemblage métier, sans
+transaction propre pour ne pas rompre celle du dépôt). Transitions `confierAUnRelecteur` et
+`marquerSansRelecteur` portées par l'entité `Exercice`, conformément à `docs/diagrammes/D4.md`
+qui prévoyait déjà `DEPOSE → EN_ATTENTE/SANS_RELECTEUR`.
+
+**Blocage :** ~5 min sur un `BUILD FAILURE` de compilation — `cannot find symbol: class
+ManyToOne` dans `Relecture.java` : l'import `jakarta.persistence.ManyToOne` manquait alors
+que l'annotation était utilisée sur `relecteur`. Cause : l'association a été écrite après les
+autres et l'import n'a pas suivi. Une fois la compilation passée, 2 tests d'intégration de
+l'issue 05 ont échoué (`expected EN_ATTENTE but was SANS_RELECTEUR`) : ils portaient sur des
+sessions où personne d'autre n'était présent, et vérifiaient le statut de l'issue 05
+(`EN_ATTENTE` écrit en dur) — désormais le tirage s'exécute réellement. Plutôt que d'attendre
+`SANS_RELECTEUR` sur un test dont le nom annonce un dépôt nominal, ces deux tests installent
+un pair présent (étudiant 5) pour rester sur le chemin `EN_ATTENTE` ; l'absence de candidat
+est couverte par les tests dédiés de l'issue 07. Le fichier porte une note expliquant ce
+choix. ~10 min au total.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **82 tests** (43 unitaires
++ 39 d'intégration). `TirageAuSortTest` (6 tests purs) prouve le tirage hors de tout contexte
+Spring : liste vide ou absente → aucun désigné, un candidat unique toujours désigné, aucune
+sortie possible de la liste sur 500 tirages, et au moins 3 candidats distincts sur 300 tirages
+à 4 candidats. `TirageRelecteurIT` (5 tests, étudiants 3/4/11/12) vérifie de bout en bout, en
+passant par la vraie transaction de `POST /api/exercices` : le relecteur est bien dans la
+liste des présents et **jamais** l'auteur, une relecture unique par exercice est créée avec
+`assigne_par = SYSTEME` et `note`/`rendu_at` nuls, la présence de source `FORMATEUR` ajoutée
+par le formateur rend éligible (§7.2), aucun présent → statut `SANS_RELECTEUR` **et aucune**
+relecture en base, et l'auteur seul présent ne peut jamais se relire. Le test de variation
+sur 20 tirages à 3 candidats distingue un générateur cassé d'une malchance (probabilité
+d'échec ≈ 3⁻¹⁹). `cd frontend && npm run build` → `tsc --noEmit` strict puis build Vite
+réussis (aucun changement frontend : l'écran de dépôt traduisait déjà `SANS_RELECTEUR`).

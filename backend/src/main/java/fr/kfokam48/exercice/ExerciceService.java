@@ -3,6 +3,10 @@ package fr.kfokam48.exercice;
 import fr.kfokam48.commun.erreur.CodeErreur;
 import fr.kfokam48.commun.erreur.ErreurMetier;
 import fr.kfokam48.commun.erreur.RessourceIntrouvableException;
+import fr.kfokam48.relecture.AssignePar;
+import fr.kfokam48.relecture.Relecture;
+import fr.kfokam48.relecture.RelectureRepository;
+import fr.kfokam48.relecture.TirageRelecteur;
 import fr.kfokam48.referentiel.Etudiant;
 import fr.kfokam48.referentiel.EtudiantRepository;
 import fr.kfokam48.session.Session;
@@ -15,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Regles metier du depot d'exercice (EF5).
@@ -40,17 +45,23 @@ public class ExerciceService {
     private final ExerciceRepository exerciceRepository;
     private final SessionRepository sessionRepository;
     private final EtudiantRepository etudiantRepository;
+    private final RelectureRepository relectureRepository;
+    private final TirageRelecteur tirageRelecteur;
     private final ValidateurLien validateurLien;
     private final Clock horloge;
 
     public ExerciceService(ExerciceRepository exerciceRepository,
                            SessionRepository sessionRepository,
                            EtudiantRepository etudiantRepository,
+                           RelectureRepository relectureRepository,
+                           TirageRelecteur tirageRelecteur,
                            ValidateurLien validateurLien,
                            Clock horloge) {
         this.exerciceRepository = exerciceRepository;
         this.sessionRepository = sessionRepository;
         this.etudiantRepository = etudiantRepository;
+        this.relectureRepository = relectureRepository;
+        this.tirageRelecteur = tirageRelecteur;
         this.validateurLien = validateurLien;
         this.horloge = horloge;
     }
@@ -58,10 +69,9 @@ public class ExerciceService {
     /**
      * Depose le lien d'un exercice pour une session.
      *
-     * <p>Le statut renvoye est {@code EN_ATTENTE} : l'exercice attend une relecture. Le
-     * tirage au sort du relecteur (issue 07) s'inserera dans cette transaction et pourra
-     * le faire basculer en {@code SANS_RELECTEUR} lorsque aucun etudiant n'est eligible
-     * (RG10).</p>
+     * <p>Le tirage au sort du relecteur a lieu dans cette meme transaction (RG9) : le
+     * statut renvoye est donc deja definit — {@code EN_ATTENTE} si un relecteur a ete
+     * trouve, {@code SANS_RELECTEUR} dans le cas contraire (RG10).</p>
      *
      * @throws ErreurMetier 400 {@code LIEN_INVALIDE}
      * @throws RessourceIntrouvableException 404 {@code SESSION_INTROUVABLE} ou {@code ETUDIANT_INCONNU}
@@ -113,15 +123,32 @@ public class ExerciceService {
             throw dejaDepose();
         }
 
+        Exercice exercice;
         try {
-            Exercice exercice = exerciceRepository.saveAndFlush(
-                    new Exercice(session, etudiant, lien, StatutExercice.EN_ATTENTE, maintenant));
-            return ExerciceCree.depuis(exercice);
+            exercice = exerciceRepository.saveAndFlush(
+                    new Exercice(session, etudiant, lien, StatutExercice.DEPOSE, maintenant));
         } catch (DataIntegrityViolationException conflit) {
             // La contrainte (session_id, etudiant_id) a refuse une seconde ligne
             // simultanee : meme reponse que la verification applicative.
             throw dejaDepose();
         }
+
+        // RG9 : le tirage a lieu immediatement, dans la meme transaction que le depot.
+        // L'exercice existe deja en base, la relecture peut donc pointer sur lui.
+        Optional<Etudiant> relecteur = tirageRelecteur.tirer(session, etudiant);
+        if (relecteur.isPresent()) {
+            exercice.confierAUnRelecteur(maintenant);
+            relectureRepository.save(
+                    new Relecture(exercice, relecteur.get(), AssignePar.SYSTEME, maintenant));
+        } else {
+            // RG10 : aucun etudiant eligible (personne de present, ou seul present = auteur).
+            // L'exercice reste visible comme sans relecteur et le formateur peut en designer
+            // un (Q11, decision 7.4).
+            exercice.marquerSansRelecteur(maintenant);
+        }
+        exerciceRepository.save(exercice);
+
+        return ExerciceCree.depuis(exercice);
     }
 
     private ErreurMetier dejaDepose() {

@@ -2,6 +2,11 @@ package fr.kfokam48.exercice;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import fr.kfokam48.presence.Presence;
+import fr.kfokam48.presence.PresenceRepository;
+import fr.kfokam48.presence.SourcePresence;
+import fr.kfokam48.referentiel.Etudiant;
+import fr.kfokam48.referentiel.EtudiantRepository;
 import fr.kfokam48.referentiel.Promotion;
 import fr.kfokam48.referentiel.PromotionRepository;
 import fr.kfokam48.session.Session;
@@ -32,6 +37,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Chaque test ouvre sa propre session : l'unicite (session, etudiant) ne peut donc
  * pas creer d'interference entre tests. On utilise l'etudiant 2 de la promotion 1, et
  * l'etudiant 13 de la promotion 2 pour le controle RG19.</p>
+ *
+ * <p>Depuis l'issue 07, le depot declenche le tirage au sort du relecteur dans la meme
+ * transaction (RG9) : le statut renvoye depend donc de qui est present. Les deux tests
+ * nominaux installent un pair present (etudiant 5) pour rester sur le chemin
+ * {@code EN_ATTENTE} ; l'absence de tout pair eligible, qui donne {@code SANS_RELECTEUR},
+ * est couverte par {@code TirageRelecteurIT} (RG10).</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -39,6 +50,7 @@ class ExerciceControllerIT {
 
     private static final long PROMOTION_1 = 1L;
     private static final long ETUDIANT_PROMOTION_1 = 2L;
+    private static final long PAIR_PRESENT = 5L;
     private static final long ETUDIANT_PROMOTION_2 = 13L;
     private static final String LIEN_VALIDE = "https://example.invalid/rendus/2-exercice4.pdf";
 
@@ -57,6 +69,12 @@ class ExerciceControllerIT {
     @Autowired
     private PromotionRepository promotionRepository;
 
+    @Autowired
+    private PresenceRepository presenceRepository;
+
+    @Autowired
+    private EtudiantRepository etudiantRepository;
+
     // ------------------------------------------------------------------ nominal
 
     @Test
@@ -64,6 +82,8 @@ class ExerciceControllerIT {
     void depose_un_exercice_valide() throws Exception {
         JsonNode session = ouvrirSessionParApi("Seance depot");
         long sessionId = session.get("id").asLong();
+        // Un pair est present : le tirage a donc un candidat et l'exercice est confie.
+        marquerPresent(sessionId, PAIR_PRESENT);
 
         String corps = deposer(sessionId, ETUDIANT_PROMOTION_1, LIEN_VALIDE)
                 .andExpect(status().isCreated())
@@ -85,6 +105,7 @@ class ExerciceControllerIT {
         // Code expire depuis 20 minutes, session non close : c'est exactement le cas de
         // l'etudiant sans connexion le soir meme (Q12).
         Session session = enregistrerSession("EEEEE2", LocalDateTime.now(ZoneOffset.UTC).minusMinutes(20), false);
+        marquerPresent(session.getId(), PAIR_PRESENT);
 
         deposer(session.getId(), ETUDIANT_PROMOTION_1, LIEN_VALIDE)
                 .andExpect(status().isCreated())
@@ -197,6 +218,14 @@ class ExerciceControllerIT {
                 .getResponse()
                 .getContentAsString();
         return objectMapper.readTree(corps);
+    }
+
+    /** Presence inseree directement en base : on controle exactement qui est eligible. */
+    private void marquerPresent(long sessionId, long etudiantId) {
+        Session session = sessionRepository.findById(sessionId).orElseThrow();
+        Etudiant etudiant = etudiantRepository.findById(etudiantId).orElseThrow();
+        presenceRepository.saveAndFlush(
+                new Presence(session, etudiant, SourcePresence.ETUDIANT, LocalDateTime.now(ZoneOffset.UTC)));
     }
 
     /** Session fabriquee directement en base, pour maitriser ouverture et cloture. */
