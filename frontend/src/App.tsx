@@ -1,19 +1,19 @@
 import { useState } from 'react'
 import { OuvrirSession } from './pages/OuvrirSession'
+import { TableauDeBord } from './pages/TableauDeBord'
 import { MarquerPresence } from './pages/MarquerPresence'
 import { DeposerExercice } from './pages/DeposerExercice'
 import { RelireExercice } from './pages/RelireExercice'
 import { ListeEtudiants } from './pages/ListeEtudiants'
 
-type Onglet = 'session' | 'presence' | 'depot' | 'relecture' | 'etudiants'
+type Onglet = 'session' | 'presence' | 'depot' | 'relecture' | 'tableau' | 'etudiants'
 
 /**
  * Racine de l'application.
  *
- * v0.3 : ouvrir une session (EF1), marquer sa presence (EF2), deposer le lien de son
- * exercice (EF5) et consulter la liste des etudiants (EF15). Les ecrans du relecteur,
- * le tirage au sort et le tableau de bord arrivent avec les issues suivantes, dans
- * l'ordre du backlog (docs/issues/README.md).
+ * Les trois parcours requis sont couverts : formateur (ouvrir une session, tableau
+ * de bord), etudiant (marquer sa presence, deposer son exercice), relecteur (faire
+ * une relecture) — plus la liste des etudiants de Q1.
  */
 export function App() {
   const [onglet, setOnglet] = useState<Onglet>('session')
@@ -32,6 +32,13 @@ export function App() {
           onClick={() => setOnglet('session')}
         >
           Formateur — ouvrir une session
+        </button>
+        <button
+          type="button"
+          className={onglet === 'tableau' ? 'onglet actif' : 'onglet'}
+          onClick={() => setOnglet('tableau')}
+        >
+          Formateur — tableau de bord
         </button>
         <button
           type="button"
@@ -64,13 +71,14 @@ export function App() {
       </nav>
 
       {onglet === 'session' && <OuvrirSession />}
+      {onglet === 'tableau' && <TableauDeBord />}
       {onglet === 'presence' && <MarquerPresence />}
       {onglet === 'depot' && <DeposerExercice />}
       {onglet === 'relecture' && <RelireExercice />}
       {onglet === 'etudiants' && <ListeEtudiants />}
 
       <footer className="pied">
-        <p>Version 0.3 — socle, sessions, presence et depot d'exercices.</p>
+        <p>Version 0.4 — sessions, presence, depot, relecture et tableau de bord.</p>
       </footer>
     </main>
   )

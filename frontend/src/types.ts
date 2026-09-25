@@ -103,3 +103,16 @@ export interface RelectureRendue {
   commentaire: string | null
   renduAt: string
 }
+
+/** Schema `LigneTableau` du contrat : une ligne par etudiant de la promotion (Q16). */
+export interface LigneTableau {
+  etudiantId: number
+  nom: string
+  prenom: string
+  presences: number
+  presencesFormateur: number
+  exercicesDeposes: number
+  /** Moyenne des notes recues, calculee par l'API (RG18) — jamais par le client. */
+  moyenne: number
+  relecturesEnAttente: number
+}
