@@ -4,6 +4,33 @@ Une entrée par étape, toujours en trois lignes : **fait**, **blocage (durée)*
 
 ---
 
+## Étape 2 — issue 11 « L'étudiant relu consulte sa note sans pouvoir connaître le relecteur »
+
+**Fait :** `GET /api/etudiants/{id}/exercices` conforme au contrat (200 avec le DTO
+`ExerciceEtudiant` `{ id, sessionId, titreSession, statut, note, commentaire }` ;
+`403 ACCES_REFUSE` si le header désigne un autre étudiant que le chemin ;
+`404 ETUDIANT_INCONNU` ; `400 CHAMP_MANQUANT` sans header). La note et le commentaire
+n'apparaissent qu'une fois la relecture rendue (Q15) ; l'anonymat du relecteur (Q8, RG20) est
+porté par le DTO — aucune clé `relecteurId`, nom ou date d'assignation ne peut fuiter, ce que
+le test vérifie sur les clés JSON exactes et sur l'absence du mot « relecteur » dans le corps.
+Le contrôleur perd son `@RequestMapping` de classe : le contrat place cet endpoint sous
+`/api/etudiants/{id}/exercices`, hors du préfixe des exercices (modèle de
+`PresenceController`).
+
+**Blocage :** trois rats de test (~20 min), aucun sur la règle métier : helper déclaré en
+style builder non exécuté, un `JsonNode.isNotExist()` inexistant, puis un scénario inversé —
+la variable « exercice en attente » pointait sur l'exercice relu, révélé par l'assertion
+`RELU`/`EN_ATTENTE`. Corrigé en donnant à chaque helper sa propre responsabilité et son
+propre retour.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **143 tests** (43 unitaires
++ 100 d'intégration), dont `ConsultationNoteIT` (5 tests, étudiants 6/11/8) : note 15 et
+commentaire visibles avec clés JSON exactes et anonymat vérifié clé par clé, exercice en
+attente sans note ni commentaire, consultation inter-étudiants refusée en 403 sans écriture,
+404, header obligatoire en 400.
+
+---
+
 ## Étape 2 — issue 06 « L'étudiant remplace le lien de son exercice tant que personne n'a commencé à le relire »
 
 **Fait :** `PUT /api/exercices/{id}` conforme au contrat (200 avec le DTO `ExerciceDetail`

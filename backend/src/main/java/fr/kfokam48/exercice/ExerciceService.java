@@ -6,6 +6,7 @@ import fr.kfokam48.commun.erreur.RessourceIntrouvableException;
 import fr.kfokam48.relecture.AssignePar;
 import fr.kfokam48.relecture.Relecture;
 import fr.kfokam48.relecture.RelectureRepository;
+import fr.kfokam48.relecture.StatutRelecture;
 import fr.kfokam48.relecture.TirageRelecteur;
 import fr.kfokam48.referentiel.Etudiant;
 import fr.kfokam48.referentiel.EtudiantRepository;
@@ -18,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -220,6 +222,46 @@ public class ExerciceService {
         exerciceRepository.save(exercice);
 
         return ExerciceDetail.depuis(exercice, relectureCommencee);
+    }
+
+    /**
+     * Liste les exercices d'un etudiant, avec sa note et son commentaire lorsque la
+     * relecture est rendue (EF11, Q8, RG20).
+     *
+     * <p>Seul l'etudiant concerne consulte sa liste : le header declare l'appelant,
+     * le service refuse tout regard sur les exercices d'un autre (403) — y compris
+     * celui d'un pair, l'anonymat du relecteur supposant aussi la confidentialite
+     * des notes entre etudiants.</p>
+     *
+     * <p>La projection ne transporte volontairement aucune information sur le
+     * relecteur : ni identifiant, ni nom, ni date d'assignation — l'anonymat de Q8
+     * est porte par le DTO, pas par un choix d'affichage.</p>
+     *
+     * @throws RessourceIntrouvableException 404 {@code ETUDIANT_INCONNU}
+     * @throws ErreurMetier 403 {@code ACCES_REFUSE} si l'appelant n'est pas l'etudiant vise
+     */
+    @Transactional(readOnly = true)
+    public List<ExerciceEtudiant> listerExercicesDeLetudiant(Long etudiantId, Long appelantId) {
+        Etudiant etudiant = etudiantRepository.findById(etudiantId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        CodeErreur.ETUDIANT_INCONNU,
+                        "L'etudiant demande est inconnu."));
+
+        if (!Objects.equals(etudiant.getId(), appelantId)) {
+            throw new ErreurMetier(
+                    CodeErreur.ACCES_REFUSE,
+                    HttpStatus.FORBIDDEN,
+                    "Chacun ne consulte que ses propres exercices.");
+        }
+
+        return exerciceRepository.findByEtudiant_IdOrderByDeposeAtDesc(etudiant.getId()).stream()
+                .map(exercice -> ExerciceEtudiant.depuis(exercice,
+                        relectureRepository.findByExercice_Id(exercice.getId())
+                                .filter(relecture -> relecture.getStatut() == StatutRelecture.RENDUE)
+                                .map(relecture -> new ExerciceEtudiant.RelectureVue(
+                                        relecture.getNote(), relecture.getCommentaire()))
+                                .orElse(null)))
+                .toList();
     }
 
     private ErreurMetier dejaDepose() {

@@ -5,6 +5,7 @@ import fr.kfokam48.relecture.RelectureAssignee;
 import fr.kfokam48.relecture.RelectureService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -13,6 +14,8 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 /**
  * Endpoints des exercices.
@@ -24,9 +27,13 @@ import org.springframework.web.bind.annotation.RestController;
  * aux regles de l'exercice ({@link ExerciceService}), la designation d'un relecteur au
  * cycle de vie de la relecture ({@link RelectureService}). Le chemin reste celui des
  * exercices, comme le fixe le contrat.</p>
+ *
+ * <p>Pas de {@code @RequestMapping} de classe : le contrat place la consultation des
+ * exercices d'un etudiant sous {@code /api/etudiants/{id}/exercices} (EF11), hors du
+ * préfixe commun — chaque méthode porte donc son chemin complet, comme dans
+ * {@code PresenceController}.</p>
  */
 @RestController
-@RequestMapping("/api/exercices")
 public class ExerciceController {
 
     private final ExerciceService exerciceService;
@@ -45,7 +52,7 @@ public class ExerciceController {
      * {@code 409 SESSION_CLOTUREE} (RG15/RG21) et les {@code 404} sont documentes dans
      * {@code api/contrat.yaml}.</p>
      */
-    @PostMapping
+    @PostMapping("/api/exercices")
     @ResponseStatus(HttpStatus.CREATED)
     public ExerciceCree deposer(@Valid @RequestBody DemandeDepotExercice demande) {
         return exerciceService.deposer(demande);
@@ -60,7 +67,7 @@ public class ExerciceController {
      * {@code 403 AUTO_EVALUATION_INTERDITE} ou {@code ACCES_REFUSE}, et {@code 409
      * RELECTURE_DEJA_ASSIGNEE} ou {@code RELECTURE_DEJA_RENDUE}.</p>
      */
-    @PostMapping("/{id}/relecteur")
+    @PostMapping("/api/exercices/{id}/relecteur")
     @ResponseStatus(HttpStatus.CREATED)
     public RelectureAssignee assignerUnRelecteur(@PathVariable Long id,
                                                 @Valid @RequestBody DemandeAssignationRelecteur demande) {
@@ -74,10 +81,23 @@ public class ExerciceController {
      * l'auteur (403 sinon) et a l'horodatage de consultation (409 si la relecture a
      * deja commence). Reponse 200 avec le DTO {@code ExerciceDetail} du contrat.
      */
-    @PutMapping("/{id}")
+    @PutMapping("/api/exercices/{id}")
     public ExerciceDetail remplacerLien(@PathVariable Long id,
                                         @RequestHeader("X-Etudiant-Id") Long etudiantId,
                                         @Valid @RequestBody DemandeRemplacementLien demande) {
         return exerciceService.remplacerLien(id, etudiantId, demande.lien());
+    }
+
+    /**
+     * {@code GET /api/etudiants/{id}/exercices} — l'etudiant relu voit sa note et son
+     * commentaire (EF11, Q8). Le header {@code X-Etudiant-Id} doit designer le meme
+     * etudiant que le chemin (403 sinon). La reponse ne contient aucune information
+     * sur le relecteur : l'anonymat est porte par le DTO {@code ExerciceEtudiant}.
+     */
+    @GetMapping("/api/etudiants/{id}/exercices")
+    public List<ExerciceEtudiant> listerMesExercices(
+            @PathVariable("id") Long etudiantId,
+            @RequestHeader("X-Etudiant-Id") Long appelantId) {
+        return exerciceService.listerExercicesDeLetudiant(etudiantId, appelantId);
     }
 }
