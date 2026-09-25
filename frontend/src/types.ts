@@ -18,3 +18,17 @@ export interface Etudiant {
   prenom: string
   promotionId: number
 }
+
+/** Corps de `POST /api/sessions`. */
+export interface DemandeOuvertureSession {
+  titre: string
+  promotionId: number
+}
+
+/** Schema `SessionCreee` du contrat : le code est a dicter aux etudiants. */
+export interface SessionCreee {
+  id: number
+  code: string
+  ouvertureAt: string
+  expirationAt: string
+}

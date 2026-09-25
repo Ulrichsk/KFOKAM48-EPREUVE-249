@@ -59,3 +59,28 @@ imprévue journalise la trace **côté serveur uniquement** — la réponse ne c
 `code` et `message`, ce qu'affirment les assertions sur l'absence de `trace`,
 `stackTrace`, `exception` et `cause` ; (3) `cd frontend && npm install && npm run build` →
 `tsc --noEmit` strict sans erreur puis build Vite réussi.
+
+---
+
+## Étape 2 — issue 02 « Ouvrir une session et obtenir un code de présence »
+
+**Fait :** `POST /api/sessions` conforme au contrat (201 avec `id`, `code`, `ouvertureAt`,
+`expirationAt` ; `400 CHAMP_MANQUANT` ; `404 PROMOTION_INCONNUE`) : entité `Session`
+calculant elle-même son expiration, générateur de code `SecureRandom` de 6 caractères sur
+un alphabet de 31 sans `0/O/1/I/L`, service avec horloge UTC injectable, DTO d'entrée
+validé par annotations et DTO de sortie en `Instant` ; 4 tests unitaires sur RG1 et
+6 tests d'intégration ; côté frontend, écran Formateur d'ouverture de session (code affiché
+en grand, états chargement et erreur) et nouvelle couche d'appel API `src/api/sessions.ts`.
+
+**Blocage :** aucun blocage technique. Une décision a été tranchée en cours de route (~5 min) :
+RG1 disait « unique parmi les sessions non clôturées », mais la contrainte en base
+(`uq_sessions_code`) est globale, et un code réutilisé après clôture rendrait la résolution
+du code ambiguë pour un étudiant. RG1 a donc été précisée en « unique toutes sessions
+confondues » dans le cahier des charges, plutôt que d'affaiblir la contrainte de la base.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, 15 tests (4 unitaires +
+11 d'intégration) sur H2 avec les migrations Flyway réelles ; les tests vérifient l'écart
+**exact** de 15 minutes entre ouverture et expiration, la conformité du code à l'alphabet
+restreint, des codes différents entre deux sessions, et l'absence de champ `trace` dans
+chaque réponse d'erreur. `cd frontend && npm run build` → `tsc --noEmit` strict puis build
+Vite réussis.
