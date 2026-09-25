@@ -46,3 +46,23 @@ export interface PresenceCreee {
   etudiantId: number
   source: 'ETUDIANT' | 'FORMATEUR'
 }
+
+/**
+ * Cycle de vie d'un exercice, tel qu'expose par le contrat.
+ * `DEPOSE` existe en base mais n'est jamais renvoye au client : c'est un etat
+ * transitoire interne a la transaction de depot.
+ */
+export type StatutExercice = 'EN_ATTENTE' | 'SANS_RELECTEUR' | 'RELU'
+
+/** Corps de `POST /api/exercices`. */
+export interface DemandeDepotExercice {
+  sessionId: number
+  etudiantId: number
+  lien: string
+}
+
+/** Schema `ExerciceCree` du contrat. */
+export interface ExerciceCree {
+  id: number
+  statut: StatutExercice
+}
