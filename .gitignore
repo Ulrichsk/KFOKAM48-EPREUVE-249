@@ -65,6 +65,9 @@ coverage/
 Thumbs.db
 desktop.ini
 
+# Donnees locales H2 : base de developpement/demonstration, jamais versionnee
+backend/data/
+
 # --------------------------------------------------------------- Secrets /
 # Aucun secret ne doit être committé (règle du sujet).
 .env

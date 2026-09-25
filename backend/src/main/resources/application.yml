@@ -3,15 +3,17 @@ spring:
     name: kfokam48
 
   # ---------------------------------------------------------------------
-  # PostgreSQL en developpement (base de demonstration, Q1/Q16).
-  # Les valeurs ci-dessous sont des identifiants de developpement LOCAL,
-  # surchargeables par variables d'environnement. Aucun secret reel n'est
-  # committe : voir la section « Secrets » du .gitignore et le README.
+  # H2 en developpement (base de demonstration, Q1/Q16) : fichier persistant
+  # ./data/kfokam48, en mode PostgreSQL pour que les migrations Flyway servies
+  # ici soient exactement celles des tests. Aucun SGBD a installer : le projet
+  # demarre sur un poste vierge. Pour brancher un vrai PostgreSQL, surcharger
+  # KFOKAM48_DB_URL / KFOKAM48_DB_USER / KFOKAM48_DB_PASSWORD (aucun secret
+  # commite : voir la section « Secrets » du .gitignore et le README).
   # ---------------------------------------------------------------------
   datasource:
-    url: ${KFOKAM48_DB_URL:jdbc:postgresql://localhost:5432/kfokam48}
-    username: ${KFOKAM48_DB_USER:kfokam48}
-    password: ${KFOKAM48_DB_PASSWORD:kfokam48}
+    url: ${KFOKAM48_DB_URL:jdbc:h2:file:./data/kfokam48;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH}
+    username: ${KFOKAM48_DB_USER:sa}
+    password: ${KFOKAM48_DB_PASSWORD:}
 
   jpa:
     # Le schema appartient a Flyway : validate uniquement, jamais update (ENF5).
