@@ -1,0 +1,92 @@
+:root {
+  color-scheme: light;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.5;
+  color: #1f2933;
+  background-color: #f5f7fa;
+}
+
+.page {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem 3rem;
+}
+
+.entete h1 {
+  margin: 0;
+  font-size: 1.75rem;
+}
+
+.entete p {
+  margin: 0.25rem 0 1.5rem;
+  color: #52606d;
+}
+
+.carte {
+  background: #ffffff;
+  border: 1px solid #e4e7eb;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+}
+
+.carte h2 {
+  margin-top: 0;
+  font-size: 1.15rem;
+}
+
+.aide {
+  color: #52606d;
+  font-size: 0.9rem;
+}
+
+.champ {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.champ input {
+  width: 6rem;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.etat {
+  color: #52606d;
+}
+
+.erreur {
+  color: #a61b1b;
+  background: #ffe3e3;
+  border: 1px solid #ffbdbd;
+  border-radius: 4px;
+  padding: 0.6rem 0.75rem;
+}
+
+.liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.liste li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f0f2f5;
+}
+
+.identifiant {
+  color: #7b8794;
+  font-variant-numeric: tabular-nums;
+}
+
+.pied {
+  margin-top: 1.5rem;
+  color: #7b8794;
+  font-size: 0.85rem;
+}
