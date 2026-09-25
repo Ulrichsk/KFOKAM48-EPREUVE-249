@@ -221,3 +221,53 @@ relecture en base, et l'auteur seul présent ne peut jamais se relire. Le test d
 sur 20 tirages à 3 candidats distingue un générateur cassé d'une malchance (probabilité
 d'échec ≈ 3⁻¹⁹). `cd frontend && npm run build` → `tsc --noEmit` strict puis build Vite
 réussis (aucun changement frontend : l'écran de dépôt traduisait déjà `SANS_RELECTEUR`).
+
+---
+
+## Étape 2 — issue 08 « Voir et débloquer les exercices restés sans relecteur »
+
+**Fait :** `POST /api/exercices/{id}/relecteur` conforme au contrat (201 avec
+`{ id, exerciceId, statut, assignePar }` ; `400 CHAMP_MANQUANT` ; `403 AUTO_EVALUATION_INTERDITE`
+si le relecteur désigné est l'auteur ; `403 ACCES_REFUSE` s'il n'est pas de la promotion ;
+`404 EXERCICE_INTROUVABLE` / `ETUDIANT_INCONNU` ; `409 RELECTURE_DEJA_ASSIGNEE` si l'exercice a
+déjà un relecteur, `409 RELECTURE_DEJA_RENDUE` si la note est déjà envoyée). La logique est
+portée par un nouveau `RelectureService` — le cycle de vie de la relecture, où viendront
+naturellement la consultation du lien (issue 09) et le rendu de note (issue 10) — avec deux DTO
+(`DemandeAssignationRelecteur`, `RelectureAssignee`) ; le contrôleur reste HTTP seul et délègue à
+ce service, bien que le chemin appartienne aux exercices. L'assignation crée la relecture avec
+`assignePar = FORMATEUR` et fait passer l'exercice de `SANS_RELECTEUR` à `EN_ATTENTE` dans la
+même transaction. Deux règles ont été précisées et consignées : le relecteur désigné à la main
+**n'a pas à être présent** à la session (l'endpoint existe parce que le tirage n'a trouvé
+personne — exiger une présence le rendrait inutile), et l'**ordre des contrôles** place l'état de
+l'exercice (`409`) avant les refus sur la personne désignée (`403`), comme pour la présence où
+`409 SESSION_CLOTUREE` précède `403 ACCES_REFUSE`. `D4.md` est passé en v1.1 (trois lignes de
+plus au tableau des transitions refusées + la règle d'ordre) et le §7.4 du cahier des charges a
+été complété.
+
+**Blocage :** un arbitrage de périmètre d'abord (~10 min). « Voir et débloquer les exercices
+sans relecteur » pouvait se lire comme une demande d'endpoint de liste supplémentaire ; or
+`api/contrat.yaml` fait foi, compte 12 chemins, et EF8 est mappé dans `D1.md` à la seule opération
+d'assignation, la visibilité passant par `GET /api/tableau` (issue 12). Décision : **contrat
+inchangé** — étendre le contrat gelé pour un besoin que le tableau couvre déjà aurait été une
+dérive. Second point, technique : le cas `409 RELECTURE_DEJA_RENDUE` n'est **pas atteignable par
+l'API** aujourd'hui, puisque rien ne rend encore de note (c'est l'issue 10). Deux options — ne pas
+implémenter cette branche avant l'issue 10, ou l'implémenter et la vérifier en amenant la ligne à
+l'état `RENDUE` directement en base. La seconde a été retenue : un refus annoncé par le contrat
+doit exister dès qu'il est observable, et le test l'explique en commentaire en précisant qu'il
+respecte les contraintes `CHECK` du schéma (statut autorisé, note entre 0 et 20). ~5 min.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **91 tests** (43 unitaires +
+48 d'intégration), dont `AssignationRelecteurIT` (9 tests) qui exerce l'endpoint de bout en bout,
+chaque cas partant d'un exercice **réellement** resté `SANS_RELECTEUR` (session ouverte par
+l'API, dépôt sans aucune présence). Assertions clés : la réponse contient exactement `id`,
+`exerciceId`, `statut` et `assignePar` (aucun champ de plus, aucun `trace`), la relecture est en
+base avec `note`/`renduAt`/`lienConsulteAt` nuls, l'exercice est bien repassé `EN_ATTENTE` avec
+**une seule** relecture ; l'assignation aboutit **sans aucune présence** à la session (la raison
+d'être de l'endpoint) ; l'auteur proposé renvoie `403 AUTO_EVALUATION_INTERDITE` **et** laisse
+l'exercice `SANS_RELECTEUR` sans relecture ; un étudiant de la promotion 2 renvoie `403
+ACCES_REFUSE` ; un second relecteur renvoie `409 RELECTURE_DEJA_ASSIGNEE` en **conservant** le
+relecteur d'origine ; un exercice déjà relu renvoie `409 RELECTURE_DEJA_RENDUE` ; corps vide,
+exercice inconnu et étudiant inconnu donnent `400 CHAMP_MANQUANT`, `404 EXERCICE_INTROUVABLE` et
+`404 ETUDIANT_INCONNU`. `cd frontend && npm run build` → `tsc --noEmit` strict puis build Vite
+réussis, sans aucun changement frontend : l'écran de déblocage dépend de la liste du tableau de
+bord, qui appartient à l'issue 12.
