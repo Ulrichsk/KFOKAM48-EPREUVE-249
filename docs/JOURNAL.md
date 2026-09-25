@@ -4,6 +4,34 @@ Une entrée par étape, toujours en trois lignes : **fait**, **blocage (durée)*
 
 ---
 
+## Étape 2 — issue 12 « Le formateur voit le tableau complet d'une promotion en une page »
+
+**Fait :** `GET /api/tableau?promotionId=` conforme au contrat (200, une ligne par étudiant :
+`etudiantId`, `nom`, `prenom`, `presences`, `presencesFormateur`, `exercicesDeposes`, `moyenne`,
+`relecturesEnAttente` ; `404 PROMOTION_INCONNUE` ; `400 CHAMP_MANQUANT` sans paramètre). Le
+calcul tient en une projection JPQL agrégée par sous-requêtes corrélées : quatre requêtes au
+total, indépendantes du nombre d'étudiants (ENF8), partant de la liste des étudiants pour
+qu'aucune ligne ne manque, même sans aucune activité (Q16). La moyenne des notes **reçues** est
+arrondie à une décimale côté API (RG18, 0 sans note) — le frontend ne la recalcule jamais.
+`presencesFormateur` distingue les ajouts manuels (Q14, RG17) ; les relectures en attente (Q11)
+comptent les relectures `EN_ATTENTE` confiées à l'étudiant.
+
+**Blocage :** deux itérations (~30 min). La première requête utilisait `is not true` — invalide
+en JPQL — pour exclure l'auteur du calcul de la moyenne ; cette garde était de toute façon
+redondante (RG6 est garantie à l'écriture), supprimée et justifiée en commentaire. Puis les
+tests ont buté sur la base H2 partagée : les étudiants 5 à 10 portent des compteurs de blocage
+posés par `BlocageTentativesCodeIT` (réponses `429` inattendues) et des activités résiduelles.
+Le scénario a été reconstruit sur les étudiants 9 (auteur relu, comptes exacts), 7 (relecteur,
+compteur purgé) et 2 (peu actif), avec l'état construit en `@BeforeAll` par l'API seule.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **116 tests** (43 unitaires
++ 73 d'intégration), dont `TableauControllerIT` (6 tests) : douze lignes pour douze étudiants,
+clés JSON exactement celles du contrat, ligne de l'auteur relu (2 dépôts, moyenne 14.0, rien
+en attente), ligne du relecteur (1 présence, 0 dépôt, moyenne 0), ligne d'un étudiant peu
+actif restée visible avec ses zeros, 404 et 400 conformes.
+
+---
+
 ## Étape 2 — issue 10 « Le relecteur rend sa relecture : une note sur 20 et un commentaire, définitifs »
 
 **Fait :** `POST /api/relectures/{id}` conforme au contrat (200 avec le DTO `RelectureRendue`,
