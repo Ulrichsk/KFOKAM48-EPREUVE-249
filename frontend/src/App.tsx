@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { OuvrirSession } from './pages/OuvrirSession'
+import { TableauDeBord } from './pages/TableauDeBord'
 import { MarquerPresence } from './pages/MarquerPresence'
 import { DeposerExercice } from './pages/DeposerExercice'
 import { ListeEtudiants } from './pages/ListeEtudiants'
 
-type Onglet = 'session' | 'presence' | 'depot' | 'etudiants'
+type Onglet = 'session' | 'presence' | 'depot' | 'tableau' | 'etudiants'
 
 /**
  * Racine de l'application.
@@ -48,6 +49,13 @@ export function App() {
         </button>
         <button
           type="button"
+          className={onglet === 'tableau' ? 'onglet actif' : 'onglet'}
+          onClick={() => setOnglet('tableau')}
+        >
+          Formateur — tableau de bord
+        </button>
+        <button
+          type="button"
           className={onglet === 'etudiants' ? 'onglet actif' : 'onglet'}
           onClick={() => setOnglet('etudiants')}
         >
@@ -58,6 +66,7 @@ export function App() {
       {onglet === 'session' && <OuvrirSession />}
       {onglet === 'presence' && <MarquerPresence />}
       {onglet === 'depot' && <DeposerExercice />}
+      {onglet === 'tableau' && <TableauDeBord />}
       {onglet === 'etudiants' && <ListeEtudiants />}
 
       <footer className="pied">
