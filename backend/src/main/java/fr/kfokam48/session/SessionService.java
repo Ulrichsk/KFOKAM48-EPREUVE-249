@@ -63,6 +63,31 @@ public class SessionService {
     }
 
     /**
+     * Clôture une session (EF14, RG21) : ferme les depots et les presences.
+     *
+     * <p><b>L'operation est idempotente</b> (decision 7.5) : recloturer une session
+     * deja close repond 200 avec la date de la premiere clôture, sans erreur — un
+     * double-clic sur le bouton du formateur ne doit pas produire d'etat incoherent.
+     * La clôture ne touche ni aux relectures en cours, ni aux notes : les relectures
+     * deja assignees restent rendables apres la clôture (RG21) — {@code
+     * RelectureService.rendreRelecture} ne consulte d'ailleurs jamais {@code clotureAt}.</p>
+     *
+     * @throws RessourceIntrouvableException 404 {@code SESSION_INTROUVABLE}
+     */
+    @Transactional
+    public SessionCloturee cloturerSession(Long sessionId) {
+        Session session = sessionRepository.findById(sessionId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        CodeErreur.SESSION_INTROUVABLE,
+                        "La session demandee est inconnue."));
+
+        // Idempotent : une session deja close conserve sa date de premiere clôture.
+        session.cloturer(LocalDateTime.now(horloge));
+
+        return SessionCloturee.depuis(sessionRepository.save(session));
+    }
+
+    /**
      * Tire un code jusqu'a en trouver un non utilise. L'echec au bout de dix
      * tentatives signale une anomalie technique (espace de codes sature ou
      * generateur defaillant), pas une erreur de l'utilisateur : le message reste
