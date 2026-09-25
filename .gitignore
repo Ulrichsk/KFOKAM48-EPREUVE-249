@@ -1,0 +1,79 @@
+# =====================================================================
+# .gitignore Java + JavaScript — KFOKAM48
+# Posé AVANT le premier commit de code (ENF11).
+# Aucun secret ne doit être committé : voir la section « secrets » en bas.
+# =====================================================================
+
+# ---------------------------------------------------------------- Java /
+# Maven
+target/
+!.mvn/wrapper/maven-wrapper.jar
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.properties.backup
+
+# Gradle (non utilisé, au cas où)
+.gradle/
+build/
+
+# IDE Java
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+hs_err_pid*
+replay_pid*
+.idea/
+*.iml
+*.ipr
+*.iws
+out/
+.settings/
+.project
+.classpath
+.factorypath
+
+# ------------------------------------------------------------ JavaScript /
+node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+logs/
+*.log
+
+# Couverture de tests
+coverage/
+.nyc_output/
+*.lcov
+
+# IDE JS / TS
+.eslintcache
+.stylelintcache
+*.tsbuildinfo
+
+# Système
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --------------------------------------------------------------- Secrets /
+# Aucun secret ne doit être committé (règle du sujet).
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.jks
+application-local.yml
+application-local.properties
+secrets/
