@@ -383,6 +383,14 @@ explicable au formateur, et (c) se vérifie d'un coup d'œil au tableau, conform
 formateur de désigner un relecteur ; elle refuse l'auteur avec
 `403 AUTO_EVALUATION_INTERDITE` (RG6) et n'est possible que tant que la relecture n'est pas rendue.
 
+**Précision apportée à l'implémentation (issue 08).** Le relecteur désigné à la main n'a pas à
+être présent à la session : l'opération existe précisément parce que le tirage n'a trouvé
+personne, et le seul présent est souvent l'auteur, de toute façon exclu par RG6. Exiger une
+présence viderait l'endpoint de son sens. Seule l'appartenance à la promotion de la session est
+vérifiée (`403 ACCES_REFUSE`, RG19 appliquée par analogie), et l'ordre des contrôles place l'état
+de l'exercice (déjà pourvu d'un relecteur : `409 RELECTURE_DEJA_ASSIGNEE`, ou déjà relu : `409
+RELECTURE_DEJA_RENDUE`) avant les refus portant sur la personne désignée.
+
 ### 7.5 Trou Q3 / Q12 — quand une session « finit »-elle ?
 
 Q3 refuse la présence « après la fin de la session » ; Q12 autorise le dépôt « jusqu'à ce que je
