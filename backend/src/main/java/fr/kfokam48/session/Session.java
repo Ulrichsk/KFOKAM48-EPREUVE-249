@@ -75,9 +75,26 @@ public class Session {
         this.clotureAt = null;
     }
 
-    /** Vrai si le code a depasse sa duree de validite (RG2, RG3). */
+    /**
+     * Vrai si le code a depasse sa duree de validite (RG2, RG3).
+     *
+     * <p>L'instant d'expiration lui-meme reste valide : le code cesse de
+     * fonctionner une fois les 15 minutes <i>ecoulees</i>, ce qu'impose Q2.</p>
+     */
     public boolean codeExpireA(LocalDateTime instant) {
         return instant.isAfter(expirationAt);
+    }
+
+    /**
+     * Cloture la session (Q12, RG21) : fin des depots et des presences.
+     *
+     * <p>L'operation est idempotente : recloturer une session deja close conserve
+     * la date de cloture initiale, ce qui evite une seconde date contradictoire.</p>
+     */
+    public void cloturer(LocalDateTime instantCloture) {
+        if (this.clotureAt == null) {
+            this.clotureAt = instantCloture;
+        }
     }
 
     /** Vrai si le formateur a clos la session (RG21). */
