@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: kfokam48
+
+  # ---------------------------------------------------------------------
+  # PostgreSQL en developpement (base de demonstration, Q1/Q16).
+  # Les valeurs ci-dessous sont des identifiants de developpement LOCAL,
+  # surchargeables par variables d'environnement. Aucun secret reel n'est
+  # committe : voir la section « Secrets » du .gitignore et le README.
+  # ---------------------------------------------------------------------
+  datasource:
+    url: ${KFOKAM48_DB_URL:jdbc:postgresql://localhost:5432/kfokam48}
+    username: ${KFOKAM48_DB_USER:kfokam48}
+    password: ${KFOKAM48_DB_PASSWORD:kfokam48}
+
+  jpa:
+    # Le schema appartient a Flyway : validate uniquement, jamais update (ENF5).
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          # Convention du projet : tous les horodatages sont stockes en UTC (ENF6).
+          time_zone: UTC
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+server:
+  port: 8080
