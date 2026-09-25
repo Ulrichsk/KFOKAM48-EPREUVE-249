@@ -66,3 +66,40 @@ export interface ExerciceCree {
   id: number
   statut: StatutExercice
 }
+
+/** Etat d'une relecture tel qu'expose par le contrat. */
+export type StatutRelecture = 'EN_ATTENTE' | 'RENDUE'
+
+/** Schema `RelectureResume` du contrat : element de la liste du relecteur (Q8). */
+export interface RelectureResume {
+  id: number
+  exerciceId: number
+  statut: StatutRelecture
+  assigneAt: string
+}
+
+/** Schema `RelectureDetail` du contrat : le lien a relire, sans identite d'auteur (Q8). */
+export interface RelectureDetail {
+  id: number
+  exerciceId: number
+  statut: StatutRelecture
+  lien: string
+  titreSession: string
+  lienConsulteAt: string | null
+}
+
+/** Corps de `POST /api/relectures/{id}` : note entiere 0-20 (Q9), commentaire facultatif. */
+export interface DemandeRelecture {
+  note: number
+  commentaire: string | null
+}
+
+/** Schema `RelectureRendue` du contrat : la note est definitive (Q15). */
+export interface RelectureRendue {
+  id: number
+  exerciceId: number
+  statut: 'RENDUE'
+  note: number
+  commentaire: string | null
+  renduAt: string
+}

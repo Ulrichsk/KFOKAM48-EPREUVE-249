@@ -2,9 +2,10 @@ import { useState } from 'react'
 import { OuvrirSession } from './pages/OuvrirSession'
 import { MarquerPresence } from './pages/MarquerPresence'
 import { DeposerExercice } from './pages/DeposerExercice'
+import { RelireExercice } from './pages/RelireExercice'
 import { ListeEtudiants } from './pages/ListeEtudiants'
 
-type Onglet = 'session' | 'presence' | 'depot' | 'etudiants'
+type Onglet = 'session' | 'presence' | 'depot' | 'relecture' | 'etudiants'
 
 /**
  * Racine de l'application.
@@ -48,6 +49,13 @@ export function App() {
         </button>
         <button
           type="button"
+          className={onglet === 'relecture' ? 'onglet actif' : 'onglet'}
+          onClick={() => setOnglet('relecture')}
+        >
+          Relecteur — faire une relecture
+        </button>
+        <button
+          type="button"
           className={onglet === 'etudiants' ? 'onglet actif' : 'onglet'}
           onClick={() => setOnglet('etudiants')}
         >
@@ -58,6 +66,7 @@ export function App() {
       {onglet === 'session' && <OuvrirSession />}
       {onglet === 'presence' && <MarquerPresence />}
       {onglet === 'depot' && <DeposerExercice />}
+      {onglet === 'relecture' && <RelireExercice />}
       {onglet === 'etudiants' && <ListeEtudiants />}
 
       <footer className="pied">
