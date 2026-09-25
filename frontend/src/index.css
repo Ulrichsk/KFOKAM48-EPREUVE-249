@@ -85,6 +85,93 @@
   font-variant-numeric: tabular-nums;
 }
 
+.onglets {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.onglet {
+  padding: 0.45rem 0.9rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 999px;
+  background: #ffffff;
+  color: #1f2933;
+  font: inherit;
+  cursor: pointer;
+}
+
+.onglet.actif {
+  background: #1f2933;
+  border-color: #1f2933;
+  color: #ffffff;
+}
+
+.formulaire {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: flex-start;
+}
+
+.formulaire .champ {
+  margin-bottom: 0;
+}
+
+.formulaire input[type="text"] {
+  width: 22rem;
+  max-width: 100%;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid #cbd2d9;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.formulaire button {
+  padding: 0.5rem 1rem;
+  border: 1px solid #1f2933;
+  border-radius: 4px;
+  background: #1f2933;
+  color: #ffffff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.formulaire button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.resultat {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f2f5;
+}
+
+.code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 2rem;
+  letter-spacing: 0.35rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.details {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.details dt {
+  color: #52606d;
+}
+
+.details dd {
+  margin: 0;
+}
+
 .pied {
   margin-top: 1.5rem;
   color: #7b8794;

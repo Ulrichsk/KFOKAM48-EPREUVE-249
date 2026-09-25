@@ -262,7 +262,7 @@ entrée expose au minimum `id`, `nom` et `prenom`.
 
 | # | Règle | Origine |
 |---|---|---|
-| **RG1** | Le code de présence est aléatoire, unique parmi les sessions non clôturées, et d'une longueur fixée à 6 caractères alphanumériques (hors caractères ambigus). | ANNEXE B / hypothèse section 7 |
+| **RG1** | Le code de présence est aléatoire (`SecureRandom`), long de 6 caractères pris dans un alphabet restreint excluant `0`, `O`, `1`, `I` et `L`, et **unique toutes sessions confondues** (contrainte en base). | ANNEXE B / hypothèse H2 ; l'unicité globale est précisée à l'étape 2 : un code déjà utilisé ne doit plus désigner aucune session, sinon la résolution du code par l'étudiant serait ambiguë. |
 | **RG2** | Le code expire 15 minutes après l'ouverture de la session : `expirationAt = ouvertureAt + 15 min`. | Q2 |
 | **RG3** | Une présence ne peut être marquée que pendant la validité du code et tant que la session n'est pas clôturée. | Q2, Q3 |
 | **RG4** | Un étudiant n'a au plus qu'une présence par session : l'unicité est garantie par contrainte en base, pas seulement par un test applicatif. | Q2, contrat (`409 DEJA_PRESENT`) |
