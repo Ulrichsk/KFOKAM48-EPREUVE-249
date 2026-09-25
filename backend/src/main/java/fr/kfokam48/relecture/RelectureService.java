@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -124,6 +125,62 @@ public class RelectureService {
                 new Relecture(exercice, relecteur, AssignePar.FORMATEUR, maintenant));
 
         return RelectureAssignee.depuis(relecture);
+    }
+
+    /**
+     * Liste les relectures confiees a un etudiant (EF9), les plus recentes d'abord.
+     *
+     * <p>Anonymat de l'auteur garanti par le DTO (Q8, RG20) : la reponse ne contient
+     * ni le nom ni l'identifiant de l'auteur de l'exercice.</p>
+     *
+     * @throws RessourceIntrouvableException 404 {@code ETUDIANT_INCONNU}
+     */
+    @Transactional(readOnly = true)
+    public List<RelectureResume> listerRelecturesDeLetudiant(Long etudiantId) {
+        Etudiant etudiant = etudiantRepository.findById(etudiantId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        CodeErreur.ETUDIANT_INCONNU,
+                        "L'etudiant demande est inconnu."));
+
+        return relectureRepository.findByRelecteur_IdOrderByAssigneAtDesc(etudiant.getId()).stream()
+                .map(RelectureResume::depuis)
+                .toList();
+    }
+
+    /**
+     * Le relecteur designe consulte le lien a relire (EF9).
+     *
+     * <p>Controles dans l'ordre du contrat : la relecture existe ({@code 404}), puis
+     * l'appelant en est bien le relecteur designe ({@code 403 ACCES_REFUSE} — un autre
+     * etudiant, y compris l'auteur lui-meme, n'a rien a faire ici).</p>
+     *
+     * <p><b>Horodatage fige.</b> La premiere consultation renseigne {@code
+     * lienConsulteAt} : des lors, le lien n'est plus remplaçable par l'auteur (Q13,
+     * RG16). Les consultations suivantes ne l'ecrasent pas : l'instant de la premiere
+     * consultation fait foi pour trancher un litige sur le lien.</p>
+     *
+     * @throws RessourceIntrouvableException 404 {@code RELECTURE_INTROUVABLE}
+     * @throws ErreurMetier 403 {@code ACCES_REFUSE} si l'appelant n'est pas le relecteur
+     */
+    @Transactional
+    public RelectureDetail consulterRelecture(Long relectureId, Long etudiantAppelant) {
+        Relecture relecture = relectureRepository.findById(relectureId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        CodeErreur.RELECTURE_INTROUVABLE,
+                        "La relecture demandee est inconnue."));
+
+        if (!Objects.equals(relecture.getRelecteurId(), etudiantAppelant)) {
+            throw new ErreurMetier(
+                    CodeErreur.ACCES_REFUSE,
+                    HttpStatus.FORBIDDEN,
+                    "Seul le relecteur designe peut consulter cette relecture.");
+        }
+
+        if (relecture.getLienConsulteAt() == null) {
+            relecture.marquerLienConsulte(LocalDateTime.now(horloge));
+        }
+
+        return RelectureDetail.depuis(relecture);
     }
 
     /**
