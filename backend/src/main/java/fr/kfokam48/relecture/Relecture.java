@@ -94,6 +94,21 @@ public class Relecture {
         this.lienConsulteAt = instant;
     }
 
+    /**
+     * Envoie la note : etat terminal, aucune reecriture possible (Q15, RG12).
+     *
+     * <p>Le service ne l'appelle qu'apres avoir verifie que la relecture est encore en
+     * attente : il n'existe donc aucun chemin qui reecrive une note rendue, et la base
+     * ne contient jamais une note rendue sans horodatage. Aucune methode de correction
+     * n'existe volontairement (decision 7.1 : Q15 prime sur Q10).</p>
+     */
+    public void rendre(int note, String commentaire, LocalDateTime instantRendu) {
+        this.note = note;
+        this.commentaire = commentaire;
+        this.renduAt = instantRendu;
+        this.statut = StatutRelecture.RENDUE;
+    }
+
     public Long getId() {
         return id;
     }
