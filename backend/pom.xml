@@ -47,19 +47,22 @@
             <artifactId>flyway-core</artifactId>
         </dependency>
 
-        <!-- Pilote PostgreSQL : base de developpement et de demonstration -->
+        <!-- Pilote PostgreSQL : optionnel, pour brancher l'application sur une base
+             externe via les variables d'environnement (KFOKAM48_DB_URL...). -->
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
             <scope>runtime</scope>
         </dependency>
 
-        <!-- Base en memoire pour les tests : ils tournent sur un poste vierge,
-             sans PostgreSQL installe ni base locale (ENF9). -->
+        <!-- H2 : base en memoire des tests (ENF9 : poste vierge, rien a installer)
+             ET base de developpement/demonstration par defaut, en mode PostgreSQL.
+             Meme famille SQL des deux cotes : les migrations Flyway servies ici sont
+             exactement celles des tests. -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <scope>runtime</scope>
         </dependency>
 
         <dependency>
