@@ -83,6 +83,17 @@ public class Relecture {
         this.statut = StatutRelecture.EN_ATTENTE;
     }
 
+    /**
+     * Premiere consultation du lien par le relecteur (Q13, RG16) : horodatage fige.
+     *
+     * <p>Le service ne l'appelle que si {@code lienConsulteAt} est encore nul : la
+     * premiere consultation fait foi, les suivantes ne reecrivent jamais la date.
+     * Tant que cette colonne est nulle, l'auteur peut encore remplacer son lien.</p>
+     */
+    public void marquerLienConsulte(LocalDateTime instant) {
+        this.lienConsulteAt = instant;
+    }
+
     public Long getId() {
         return id;
     }

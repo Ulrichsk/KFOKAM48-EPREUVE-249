@@ -4,6 +4,33 @@ Une entrée par étape, toujours en trois lignes : **fait**, **blocage (durée)*
 
 ---
 
+## Étape 2 — issue 09 « Le relecteur consulte le lien à relire sans savoir qui l'a écrit »
+
+**Fait :** `GET /api/relectures` et `GET /api/relectures/{id}` conformes au contrat (200 avec
+les DTO `RelectureResume` et `RelectureDetail` ; `404 ETUDIANT_INCONNU` / `RELECTURE_INTROUVABLE` ;
+`403 ACCES_REFUSE` si l'appelant n'est pas le relecteur désigné, y compris l'auteur ;
+`400 CHAMP_MANQUANT` sans le header `X-Etudiant-Id`). La première consultation horodate
+`lien_consulte_at` et les suivantes ne l'écrasent jamais : l'instant de la première consultation
+fait foi et fige le remplacement du lien par l'auteur (Q13, RG16). L'anonymat de l'auteur (Q8,
+RG20) est garanti par construction : aucun DTO ne porte d'identité d'auteur ou de relecteur, ce
+qu'un test vérifie sur les clés JSON exactes. Note de portée : la liste n'expose que le statut
+`EN_ATTENTE`/`RENDUE` du contrat ; l'écran relecteur n'a besoin que de l'élément en attente,
+la note consultable par l'auteur viendra avec l'issue 11.
+
+**Blocage :** deux faux départs d'écriture (~5 min), rattrapés avant toute compilation : un
+import corrompu dans le contrôleur et un mauvais type dans le DTO, tous deux remplacés par des
+fichiers propres avant le premier `verify`. Un helper de test d'abord écrit de tête se trompait
+de repository ; corrigé en injectant `SessionRepository`. Aucun point de blocage réel.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **98 tests** (43 unitaires
++ 55 d'intégration), dont `ConsultationRelectureIT` (7 tests, étudiants 2/8/9) : liste anonyme
+avec clés JSON exactement `{ id, exerciceId, statut, assigneAt }`, horodatage de la première
+consultation puis non-réécriture lors d'une seconde, refus de l'intrus et de l'auteur en `403`,
+`404` relecture et étudiant inconnus, header obligatoire en `400`. Le réveil de la classe
+`Exercice` par la requête restait dans la transaction : aucune entité JPA n'est sérialisée.
+
+---
+
 ## Étape 1 — ANALYSE (aucun code)
 
 **Fait :** analyse du besoin client et de l'ANNEXE A (16 Q/R) ; rédaction de
