@@ -151,6 +151,77 @@ public class ExerciceService {
         return ExerciceCree.depuis(exercice);
     }
 
+    /**
+     * Remplace le lien d'un exercice par son auteur, tant que la relecture n'a pas
+     * commence (EF6, Q13, RG16).
+     *
+     * <p><b>Ordre des controles</b>, convention du projet : forme de la demande (400),
+     * ressources visees (404), etat de la session (409), identite de l'appelant (403),
+     * etat de la relecture (409).</p>
+     *
+     * <p>« Personne n'a commence a relire » est verifie par le traçage pose a l'issue
+     * 09 : le relecteur qui ouvre le lien horodate {@code lien_consulte_at}, et cet
+     * instant ne bouge plus. Il fait foi : apres lui, le lien est fige — l'ancien
+     * reste en place, aucune modification n'est ecrite.</p>
+     *
+     * @throws ErreurMetier 400 {@code LIEN_INVALIDE} si le nouveau lien est mal forme
+     * @throws RessourceIntrouvableException 404 {@code EXERCICE_INTROUVABLE}
+     * @throws ErreurMetier 409 {@code SESSION_CLOTUREE} (RG21)
+     * @throws ErreurMetier 403 {@code ACCES_REFUSE} si l'appelant n'est pas l'auteur
+     * @throws ErreurMetier 409 {@code RELECTURE_COMMENCEE} si le relecteur a deja ouvert le lien
+     */
+    @Transactional
+    public ExerciceDetail remplacerLien(Long exerciceId, Long etudiantAppelant, String nouveauLienBrut) {
+        // RG22 : validation d'entree d'abord, sans toucher a la base.
+        String nouveauLien = nouveauLienBrut == null ? "" : nouveauLienBrut.trim();
+        if (!validateurLien.estValide(nouveauLien)) {
+            throw new ErreurMetier(
+                    CodeErreur.LIEN_INVALIDE,
+                    HttpStatus.BAD_REQUEST,
+                    "Le lien doit etre une URL absolue commencant par http:// ou https://, "
+                            + "de " + ValidateurLien.LONGUEUR_MAX + " caracteres au plus.");
+        }
+
+        Exercice exercice = exerciceRepository.findById(exerciceId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        CodeErreur.EXERCICE_INTROUVABLE,
+                        "L'exercice demande est inconnu."));
+
+        // RG21 : la clôture ferme aussi les remplacements — remplacer un lien apres
+        // la clôture reviendrait a deposer un exercice que la session ne verra jamais.
+        if (exercice.getSession().estCloturee()) {
+            throw new ErreurMetier(
+                    CodeErreur.SESSION_CLOTUREE,
+                    HttpStatus.CONFLICT,
+                    "Cette session est close : le lien ne peut plus etre remplace.");
+        }
+
+        // Q13 : seul l'auteur remplace son lien — pas le relecteur, pas un tiers.
+        if (!Objects.equals(exercice.getEtudiantId(), etudiantAppelant)) {
+            throw new ErreurMetier(
+                    CodeErreur.ACCES_REFUSE,
+                    HttpStatus.FORBIDDEN,
+                    "Seul l'auteur de l'exercice peut remplacer son lien.");
+        }
+
+        // Q13 / RG16 : la relecture a-t-elle deja commence ? La consultation du lien
+        // par le relecteur horodate l'instant qui fige le lien, quoi qu'il arrive.
+        boolean relectureCommencee = relectureRepository.findByExercice_Id(exerciceId)
+                .map(relecture -> relecture.getLienConsulteAt() != null)
+                .orElse(false);
+        if (relectureCommencee) {
+            throw new ErreurMetier(
+                    CodeErreur.RELECTURE_COMMENCEE,
+                    HttpStatus.CONFLICT,
+                    "Le relecteur a deja consulte ce lien : il ne peut plus etre remplace.");
+        }
+
+        exercice.remplacerLien(nouveauLien, LocalDateTime.now(horloge));
+        exerciceRepository.save(exercice);
+
+        return ExerciceDetail.depuis(exercice, relectureCommencee);
+    }
+
     private ErreurMetier dejaDepose() {
         return new ErreurMetier(
                 CodeErreur.EXERCICE_DEJA_DEPOSE,

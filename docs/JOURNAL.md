@@ -4,6 +4,30 @@ Une entrée par étape, toujours en trois lignes : **fait**, **blocage (durée)*
 
 ---
 
+## Étape 2 — issue 06 « L'étudiant remplace le lien de son exercice tant que personne n'a commencé à le relire »
+
+**Fait :** `PUT /api/exercices/{id}` conforme au contrat (200 avec le DTO `ExerciceDetail`
+`{ id, sessionId, statut, lien, relectureCommencee }` ; `400 LIEN_INVALIDE` avec ancien lien
+conservé ; `403 ACCES_REFUSE` si l'appelant n'est pas l'auteur ; `404 EXERCICE_INTROUVABLE` ;
+`409 SESSION_CLOTUREE` ; `409 RELECTURE_COMMENCEE` ; `400 CHAMP_MANQUANT` sans le header
+`X-Etudiant-Id`). Le contrôle « personne n'a commencé à relire » s'appuie sur le traçage de
+l'issue 09 : c'est l'horodatage de la première consultation du lien par le relecteur qui fige
+le remplacement — jamais la seule existence d'une relecture en attente. L'ordre des contrôles
+suit la convention du projet (forme, 404, 409 session, 403 auteur, 409 relecture). Un exercice
+`SANS_RELECTEUR` peut aussi voir son lien remplacé : sans relecteur, personne ne peut avoir
+commencé à relire.
+
+**Blocage :** aucun sur la règle métier ; un helper de test d'abord écrit en style builder
+non exécuté (même rat qu'à l'issue 10) corrigé en une minute.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **138 tests** (43 unitaires
++ 95 d'intégration), dont `RemplacementLienIT` (8 tests, étudiants 4/12/5) : remplacement
+nominal avant consultation avec clés JSON exactes, lien figé après consultation (`409` et
+ancien lien vérifié en base), intrus refusé sans écriture, lien invalide sans écriture,
+clôture refusée, cas `SANS_RELECTEUR` accepté, 404 et header obligatoire.
+
+---
+
 ## Étape 2 — issue 14 « Le formateur ajoute une présence à la main »
 
 **Fait :** `POST /api/sessions/{id}/presences` conforme au contrat (201 avec

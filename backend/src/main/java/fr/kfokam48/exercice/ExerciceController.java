@@ -7,7 +7,9 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
@@ -63,5 +65,19 @@ public class ExerciceController {
     public RelectureAssignee assignerUnRelecteur(@PathVariable Long id,
                                                 @Valid @RequestBody DemandeAssignationRelecteur demande) {
         return relectureService.assignerUnRelecteur(id, demande.relecteurId());
+    }
+
+    /**
+     * {@code PUT /api/exercices/{id}} — l'auteur remplace son lien tant que la
+     * relecture n'a pas commence (EF6, Q13, RG16). Le contrat impose le header
+     * {@code X-Etudiant-Id} : il designe l'appelant, que le service confronte a
+     * l'auteur (403 sinon) et a l'horodatage de consultation (409 si la relecture a
+     * deja commence). Reponse 200 avec le DTO {@code ExerciceDetail} du contrat.
+     */
+    @PutMapping("/{id}")
+    public ExerciceDetail remplacerLien(@PathVariable Long id,
+                                        @RequestHeader("X-Etudiant-Id") Long etudiantId,
+                                        @Valid @RequestBody DemandeRemplacementLien demande) {
+        return exerciceService.remplacerLien(id, etudiantId, demande.lien());
     }
 }
