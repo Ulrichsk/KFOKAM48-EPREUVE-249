@@ -73,6 +73,26 @@ public class Exercice {
         this.majAt = maintenant;
     }
 
+    /**
+     * Le tirage au sort a trouve un relecteur : l'exercice attend sa note (Q7, RG9).
+     *
+     * <p>Le statut passe directement de {@code DEPOSE} a {@code EN_ATTENTE} : {@code DEPOSE}
+     * n'existe que le temps de la transaction de depot et n'est jamais expose (D4).</p>
+     */
+    public void confierAUnRelecteur(LocalDateTime maintenant) {
+        this.statut = StatutExercice.EN_ATTENTE;
+        this.majAt = maintenant;
+    }
+
+    /**
+     * Aucun etudiant eligible : l'exercice reste sans relecteur et doit rester visible
+     * dans le tableau du formateur, qui pourra en designer un (Q11, RG10).
+     */
+    public void marquerSansRelecteur(LocalDateTime maintenant) {
+        this.statut = StatutExercice.SANS_RELECTEUR;
+        this.majAt = maintenant;
+    }
+
     public Long getId() {
         return id;
     }
