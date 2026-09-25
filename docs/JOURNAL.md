@@ -77,6 +77,11 @@ RG1 disait « unique parmi les sessions non clôturées », mais la contrainte e
 (`uq_sessions_code`) est globale, et un code réutilisé après clôture rendrait la résolution
 du code ambiguë pour un étudiant. RG1 a donc été précisée en « unique toutes sessions
 confondues » dans le cahier des charges, plutôt que d'affaiblir la contrainte de la base.
+À signaler aussi : ~10 min perdues sur une manipulation Git (commit lancé sans `-m`, ce qui a
+ouvert l'éditeur, puis `--amend` qui a réécrit le commit du socle). Le commit du socle était
+intact dans `feature/socle-projet` et l'index vide : réparé par un `git reset --soft`, sans
+aucune perte de fichier. Leçon retenue : passer le message par l'entrée standard
+(`git commit -F -`), jamais par l'éditeur, et ne jamais utiliser `--amend` sur un commit propre.
 
 **Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, 15 tests (4 unitaires +
 11 d'intégration) sur H2 avec les migrations Flyway réelles ; les tests vérifient l'écart
@@ -84,3 +89,32 @@ confondues » dans le cahier des charges, plutôt que d'affaiblir la contrainte 
 restreint, des codes différents entre deux sessions, et l'absence de champ `trace` dans
 chaque réponse d'erreur. `cd frontend && npm run build` → `tsc --noEmit` strict puis build
 Vite réussis.
+
+---
+
+## Étape 2 — issue 03 « Marquer sa présence avec le code de la session »
+
+**Fait :** `POST /api/presences` conforme au contrat (201 avec `id`, `sessionId`, `etudiantId`,
+`source` ; `400 CODE_INCONNU` ; `409 DEJA_PRESENT` ; `410 CODE_EXPIRE`), avec l'ordre de
+contrôles du diagramme `D3.md` : session close (`409 SESSION_CLOTUREE`) → expiration du code
+(`410`) → appartenance à la promotion de la session (`403 ACCES_REFUSE`, RG19) → unicité de
+la présence (RG4). L'unicité reste garantie par la contrainte de la table : une violation en
+base est traduite en `409 DEJA_PRESENT`. Ajouts : `SourcePresence` (ETUDIANT/FORMATEUR),
+résolution du code par `SessionRepository.findByCode`, `Session.cloturer()` (utilisée par
+l'issue 13), normalisation du code saisi (H9, documentée au cahier des charges), et
+complément du contrat (`403` et `404` pour cette opération). Côté frontend : écran Étudiant
+qui réutilise la liste de noms de Q1 puis saisit le code, avec états de chargement, d'erreur
+et de succès.
+
+**Blocage :** aucun blocage. ~5 min de réflexion sur la traduction de la violation de
+contrainte : en JPA, une violation détectée au flush condamne la transaction en cours, le
+`catch` est donc placé autour de `saveAndFlush` et relance une exception métier — le rollback
+étant de toute façon le résultat voulu (aucune ligne écrite, réponse `409`).
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **31 tests** (10 unitaires +
+21 d'intégration) sur H2 avec les migrations Flyway réelles. Les assertions les plus
+parlantes : un code expiré renvoie `410` **même si l'étudiant est déjà présent** (priorité de
+l'expiration sur l'unicité), un second vote ne crée **aucune** seconde ligne
+(`countBySession_Id`), un code saisi en minuscules avec des espaces est accepté, et un
+étudiant de la promotion 2 sur une session de la promotion 1 reçoit `403 ACCES_REFUSE`.
+`cd frontend && npm run build` → `tsc --noEmit` strict puis build Vite réussis.

@@ -138,6 +138,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Erreur'
+        '403':
+          description: |
+            `ACCES_REFUSE` si l'étudiant n'appartient pas à la promotion de la session
+            (RG19). L'erreur n'est pas listée dans l'ANNEXE B, qui énumère les erreurs du
+            cas courant : elle est ajoutée ici, et le contrat fait foi.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erreur'
+        '404':
+          $ref: '#/components/responses/EtudiantIntrouvable'
         '409':
           description: '`DEJA_PRESENT` si la présence existe déjà ; `SESSION_CLOTUREE` après clôture.'
           content:

@@ -427,6 +427,7 @@ Aucun n'est un arbitrage métier : ils découlent du contrat imposé.
 - **H6** — Un étudiant peut déposer un exercice pour une session à laquelle il n'était pas présent ; l'absence de présence n'est pas un motif de refus de dépôt (le client ne l'a jamais demandé).
 - **H7** — Le blocage de Q4 est comptabilisé par étudiant, toutes sessions confondues, et non par couple (étudiant, session) : le client parle de « bloquez-le », pas de « bloquer sa tentative sur cette session ».
 - **H8** — La clôture d'une session n'annule pas les relectures déjà rendues, et ne rend pas relisibles les exercices `SANS_RELECTEUR` : le formateur peut encore assigner un relecteur après clôture, la note restant le seul acte de relecture possible après clôture (RG21).
+- **H9** — Le code de présence est comparé après normalisation (espaces de bord retirés, casse replacée en majuscules). Il est dicté à l'oral puis recopié à la main : une casse approximative ne doit pas produire une erreur incompréhensible, et cette tolérance ne réduit pas l'espace des codes. La valeur stockée reste en majuscules.
 
 ---
 

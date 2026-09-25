@@ -32,3 +32,17 @@ export interface SessionCreee {
   ouvertureAt: string
   expirationAt: string
 }
+
+/** Corps de `POST /api/presences`. */
+export interface DemandePresence {
+  code: string
+  etudiantId: number
+}
+
+/** Schema `PresenceCreee` du contrat. */
+export interface PresenceCreee {
+  id: number
+  sessionId: number
+  etudiantId: number
+  source: 'ETUDIANT' | 'FORMATEUR'
+}
