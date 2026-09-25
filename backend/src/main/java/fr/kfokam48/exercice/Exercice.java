@@ -93,6 +93,16 @@ public class Exercice {
         this.majAt = maintenant;
     }
 
+    /**
+     * La note a ete envoyee : etat terminal de l'exercice (Q15, RG12). La relecture
+     * et l'exercice changent d'etat dans la meme transaction : un exercice {@code RELU}
+     * a toujours une relecture {@code RENDUE} derriere lui, et l'inverse est impossible.
+     */
+    public void marquerRelu(LocalDateTime maintenant) {
+        this.statut = StatutExercice.RELU;
+        this.majAt = maintenant;
+    }
+
     public Long getId() {
         return id;
     }

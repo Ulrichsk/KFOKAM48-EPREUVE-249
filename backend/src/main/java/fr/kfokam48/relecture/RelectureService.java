@@ -184,10 +184,115 @@ public class RelectureService {
     }
 
     /**
+     * Le relecteur designe rend sa note et son commentaire (EF10).
+     *
+     * <p><b>Ordre des controles</b>, aligne sur la convention des autres endpoints :
+     * ressource visee, identite de l'appelant, forme de la note, puis etat de la
+     * relecture.</p>
+     *
+     * <p><b>La note est definitive des son envoi</b> (Q15, decision 7.1) : il n'existe
+     * aucun chemin d'ecriture vers une relecture {@code RENDUE} — le second envoi est
+     * refuse avant d'avoir pu modifier quoi que ce soit, et la note d'origine reste
+     * inchangee (RG12). Le contrat impose d'ailleurs {@code 409 relecture deja
+     * rendue} sur cette operation, ce qui decrit precisement une seconde tentative.</p>
+     *
+     * <p><b>Apres la cloture, le rendu reste possible</b> (RG21) : la clôture ferme
+     * les depots et les presences, pas les notes des relectures deja assignees.</p>
+     *
+     * @throws RessourceIntrouvableException 404 {@code RELECTURE_INTROUVABLE}
+     * @throws ErreurMetier 403 {@code ACCES_REFUSE} si l'appelant n'est pas le relecteur designe
+     * @throws ErreurMetier 400 {@code NOTE_INVALIDE} si la note est absente, decimale, hors 0-20
+     * @throws ErreurMetier 409 {@code RELECTURE_DEJA_RENDUE} si la note a deja ete envoyee
+     */
+    @Transactional
+    public RelectureRendue rendreRelecture(Long relectureId, Long etudiantAppelant,
+                                           DemandeRelecture demande) {
+        LocalDateTime maintenant = LocalDateTime.now(horloge);
+
+        Relecture relecture = relectureRepository.findById(relectureId)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        CodeErreur.RELECTURE_INTROUVABLE,
+                        "La relecture demandee est inconnue."));
+
+        if (Objects.equals(relecture.getExercice().getEtudiantId(), etudiantAppelant)) {
+            // Q5 : l'auteur ne peut jamais noter son propre exercice — le contrat
+            // distingue ce cas de celui d'un simple etranger.
+            throw new ErreurMetier(
+                    CodeErreur.AUTO_EVALUATION_INTERDITE,
+                    HttpStatus.FORBIDDEN,
+                    "Un etudiant ne peut pas relire son propre exercice.");
+        }
+        if (!Objects.equals(relecture.getRelecteurId(), etudiantAppelant)) {
+            throw new ErreurMetier(
+                    CodeErreur.ACCES_REFUSE,
+                    HttpStatus.FORBIDDEN,
+                    "Seul le relecteur designe peut rendre cette relecture.");
+        }
+
+        // Q9 : la note est un entier de 0 a 20. La forme est verifiee ici et non par
+        // une annotation seule : le contrat impose le code NOTE_INVALIDE (et non
+        // CHAMP_MANQUANT) pour toute note absente, decimale ou hors bornes.
+        Integer note = noteEntiere(demande.note());
+        if (note == null || note < 0 || note > 20) {
+            throw new ErreurMetier(
+                    CodeErreur.NOTE_INVALIDE,
+                    HttpStatus.BAD_REQUEST,
+                    "La note doit etre un nombre entier compris entre 0 et 20.");
+        }
+
+        // Le contrat borne le commentaire a 2000 caracteres (schema DemandeRelecture) :
+        // refus explicite plutot que de laisser la contrainte SQL repondre un 500.
+        String commentaireBrut = demande.commentaire();
+        if (commentaireBrut != null && commentaireBrut.trim().length() > 2000) {
+            throw new ErreurMetier(
+                    CodeErreur.VALEUR_INVALIDE,
+                    HttpStatus.BAD_REQUEST,
+                    "Le commentaire ne doit pas depasser 2000 caracteres.");
+        }
+
+        // Q15 / RG12 : l'etat est verifie en dernier, juste avant l'ecriture. La note
+        // d'origine reste donc strictement inchangee derriere un 409.
+        if (relecture.getStatut() == StatutRelecture.RENDUE) {
+            throw new ErreurMetier(
+                    CodeErreur.RELECTURE_DEJA_RENDUE,
+                    HttpStatus.CONFLICT,
+                    "Cette relecture a deja ete rendue et n'est plus modifiable.");
+        }
+
+        // Le commentaire est facultatif : vide ou absent, il n'est pas stocke.
+        String commentaire = commentaireBrut == null ? null : commentaireBrut.trim();
+        relecture.rendre(note, commentaire == null || commentaire.isEmpty() ? null : commentaire, maintenant);
+
+        // RG12 : la relecture et l'exercice changent d'etat dans la meme transaction.
+        Exercice exercice = relecture.getExercice();
+        exercice.marquerRelu(maintenant);
+        exerciceRepository.save(exercice);
+
+        return RelectureRendue.depuis(relecture);
+    }
+
+    /**
      * Deux refus possibles derriere le meme statut {@code 409}, et le contrat les
      * distingue : une relecture en attente est un relecteur deja designe, une relecture
      * rendue est une note deja envoyee — donc definitive (Q15, RG12).
      */
+    /**
+     * Convertit la note recue en entier strict, ou renvoie {@code null} si elle est
+     * absente ou decimale : c'est le service, et non la liaison JSON, qui tranche entre
+     * {@code NOTE_INVALIDE} (note absente, decimale ou hors bornes, cf. contrat) et les
+     * autres erreurs de forme.
+     */
+    private Integer noteEntiere(Number noteRecue) {
+        if (noteRecue == null) {
+            return null;
+        }
+        long valeur = noteRecue.longValue();
+        if (valeur != noteRecue.doubleValue()) {
+            return null; // note decimale (ex. 14.5)
+        }
+        return (int) valeur;
+    }
+
     private ErreurMetier dejaAssignee(Relecture existante) {
         if (existante.getStatut() == StatutRelecture.RENDUE) {
             return new ErreurMetier(

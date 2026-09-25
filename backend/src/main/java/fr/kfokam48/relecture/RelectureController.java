@@ -2,6 +2,8 @@ package fr.kfokam48.relecture;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -47,5 +49,18 @@ public class RelectureController {
             @PathVariable Long id,
             @RequestHeader("X-Etudiant-Id") Long etudiantId) {
         return relectureService.consulterRelecture(id, etudiantId);
+    }
+
+    /**
+     * {@code POST /api/relectures/{id}} — le relecteur designe rend sa note et son
+     * commentaire (EF10). Operation imposee du contrat : note entiere 0-20 (Q9),
+     * definitive des l'envoi (Q15) — toute seconde tentative repond 409.
+     */
+    @PostMapping("/{id}")
+    public RelectureRendue rendreMaRelecture(
+            @PathVariable Long id,
+            @RequestHeader("X-Etudiant-Id") Long etudiantId,
+            @RequestBody DemandeRelecture demande) {
+        return relectureService.rendreRelecture(id, etudiantId, demande);
     }
 }

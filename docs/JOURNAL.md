@@ -4,6 +4,34 @@ Une entrée par étape, toujours en trois lignes : **fait**, **blocage (durée)*
 
 ---
 
+## Étape 2 — issue 10 « Le relecteur rend sa relecture : une note sur 20 et un commentaire, définitifs »
+
+**Fait :** `POST /api/relectures/{id}` conforme au contrat (200 avec le DTO `RelectureRendue`,
+six champs exactement, sans identité de relecteur ; `400 NOTE_INVALIDE` si la note est absente,
+décimale ou hors 0-20 ; `400 VALEUR_INVALIDE` au-delà de 2000 caractères de commentaire ;
+`403 AUTO_EVALUATION_INTERDITE` si l'appelant est l'auteur, `403 ACCES_REFUSE` sinon ;
+`404 RELECTURE_INTROUVABLE` ; `409 RELECTURE_DEJA_RENDUE`). Le rendu passe la relecture à
+`RENDUE` et l'exercice à `RELU` dans la même transaction (RG12). La note est définitive dès
+l'envoi (Q15, §7.1) : aucun chemin d'écriture n'existe vers une relecture rendue, le second
+envoi est refusé avant toute modification et la note d'origine reste inchangée. Le rendu reste
+possible après clôture de la session (RG21) : le service ne consulte pas `cloture_at`.
+
+**Blocage :** deux choix de conception arbitrés (~15 min). La note décimale (`14.5`) aurait été
+capturée par la liaison JSON comme un « corps illisible » (`VALEUR_INVALIDE`) : le champ est
+déclaré `Number` et le service tranche, pour honorer le `NOTE_INVALIDE` imposé par le contrat.
+Par ailleurs le contrat distingue l'auteur (`AUTO_EVALUATION_INTERDITE`) d'un simple étranger
+(`ACCES_REFUSE`) : deux gardes distinctes. Un doublon de déclaration locale corrigé en une
+minute avant la première compilation.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **110 tests** (43 unitaires
++ 67 d'intégration), dont `RendreRelectureIT` (12 tests, étudiants 3/10/11) : nominal avec clés
+JSON exactes et anonymat, commentaire absent/vide accepté, bornes 0 et 20 incluses, note
+absente/décimale/21/-1 en `NOTE_INVALIDE`, commentaire 2001 caractères en `VALEUR_INVALIDE`,
+auteur et intrus refusés sans écriture, second envoi en `409` avec note d'origine vérifiée
+inchangée en base, 404 et header obligatoire.
+
+---
+
 ## Étape 2 — issue 09 « Le relecteur consulte le lien à relire sans savoir qui l'a écrit »
 
 **Fait :** `GET /api/relectures` et `GET /api/relectures/{id}` conformes au contrat (200 avec
