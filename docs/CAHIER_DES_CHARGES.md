@@ -279,11 +279,12 @@ entrée expose au minimum `id`, `nom` et `prenom`.
 | **RG15** | Un exercice peut être déposé jusqu'à la clôture de la session, y compris après l'expiration du code de présence. | Q12 |
 | **RG16** | Le lien d'un exercice est remplaçable tant qu'aucun relecteur n'a consulté le lien ; dès la première consultation, il est figé (`409 RELECTURE_COMMENCEE`). | Q13 |
 | **RG17** | Une présence ajoutée par le formateur porte `source = FORMATEUR` et cette origine doit rester visible dans le tableau ; une présence saisie par l'étudiant porte `source = ETUDIANT`. | Q14 |
-| **RG18** | Le tableau affiche, par étudiant : ses présences, son nombre d'exercices déposés, la moyenne de ses notes reçues et ses relectures en attente. La moyenne est arrondie à une décimale ; elle est nulle si l'étudiant n'a reçu aucune note. | Q16 + hypothèse section 7 |
+| **RG18** | Le tableau affiche, par étudiant : ses présences, son nombre d'exercices déposés, la moyenne de ses notes reçues, ses relectures en attente et les identifiants de ses exercices restés sans relecteur. La moyenne est arrondie à une décimale ; elle est nulle si l'étudiant n'a reçu aucune note. La liste des exercices sans relecteur a été ajoutée par le changement de besoin de l'enveloppe étape 3 : le formateur désigne un relecteur directement depuis l'écran (issue 16). | Q16 + hypothèse section 7 ; enveloppe étape 3 |
 | **RG19** | Un étudiant ne peut agir que sur une session de sa propre promotion : un dépôt ou une présence sur la session d'une autre promotion est refusé. | cohérence `promotionId` |
 | **RG20** | L'anonymat du relecteur est garanti côté serveur : aucune réponse d'API destinée à l'étudiant relu ne contient l'identité du relecteur. | Q8 |
 | **RG21** | Aucune opération n'est possible sur une session clôturée en dehors du rendu des relectures déjà assignées (`409 SESSION_CLOTUREE`). | Q10, Q12, décision section 7 |
 | **RG22** | Un lien d'exercice valide est une URL `http` ou `https` absolue, de 500 caractères au plus. | contrat (`400 LIEN_INVALIDE`) |
+| **RG23** | Chaque assignation manuelle de relecteur réussie laisse une trace d'audit : pour quel exercice, quel relecteur, quand (table `audits_assignation_manuelle`, migration V3). Le tirage automatique n'est pas tracé : `assigne_par = SYSTEME` l'atteste sur la relecture elle-même. | enveloppe étape 3 (issue 16) |
 
 ---
 
@@ -390,6 +391,17 @@ présence viderait l'endpoint de son sens. Seule l'appartenance à la promotion 
 vérifiée (`403 ACCES_REFUSE`, RG19 appliquée par analogie), et l'ordre des contrôles place l'état
 de l'exercice (déjà pourvu d'un relecteur : `409 RELECTURE_DEJA_ASSIGNEE`, ou déjà relu : `409
 RELECTURE_DEJA_RENDUE`) avant les refus portant sur la personne désignée.
+
+**Mise à jour après le changement de besoin de l'enveloppe étape 3 (issue 16).** La voie de
+secours change d'échelle : le formateur ne l'actionne plus « à la main » en appelant l'API,
+mais depuis l'écran du tableau de bord — la ligne de chaque étudiant expose désormais les
+identifiants de ses exercices restés `SANS_RELECTEUR` (RG18 complétée), et la désignation se
+fait par sélection d'un relecteur parmi la promotion, autre que l'auteur. Le statut
+`SANS_RELECTEUR` reste la porte d'entrée de la voie de secours et le tirage au sort reste la
+voie normale (RG9) : l'enveloppe ne change aucune règle d'éligibilité, elle rend l'usage
+praticable. Chaque désignation réussie laisse désormais une trace d'audit (RG23, migration
+V3) — la réécriture de l'historique du déblocage resterait impossible, dans l'esprit de la
+décision 7.1.
 
 ### 7.5 Trou Q3 / Q12 — quand une session « finit »-elle ?
 

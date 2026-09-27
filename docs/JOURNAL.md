@@ -529,4 +529,9 @@ la désignation (RG23, migration V3) ; `types.ts` aligné, `api/tableau.ts` gagn
 `designerRelecteur`, `TableauDeBord.tsx` propose sur chaque exercice bloqué la
 sélection d'un relecteur autre que l'auteur (messages 403/409 de l'API affichés tels
 quels, tableau rechargé après succès, moyenne jamais recalculée). `cd frontend &&
-npm run build` → `tsc --noEmit` strict puis build Vite réussis.
+npm run build` → `tsc --noEmit` strict puis build Vite réussis. Enfin l'analyse :
+CDC (RG18 complétée, **RG23 créée**, §7.4 mis à jour), D2 en 1.1 (huitième table,
+§8), D4 en 1.2 (transition annotée + tableau des refus), dans un commit explicitement
+« mise à jour de l'analyse suite au changement de besoin (enveloppe étape 3) ». La
+repriorisation du backlog est documentée dans `docs/REPRIORISATION_BACKLOG.md`
+(point 6 du protocole).
