@@ -281,6 +281,10 @@ paths:
         présent, ou seul présent = auteur). L'exercice passe alors de `SANS_RELECTEUR` à
         `EN_ATTENTE` avec `assignePar = FORMATEUR`. L'auteur ne peut jamais être désigné
         (Q5).
+
+        Changement de besoin (enveloppe étape 3, issue 16) : cette opération est mise en
+        œuvre depuis l'écran du tableau de bord ; chaque désignation réussie laisse une
+        trace d'audit (RG23, migration V3). Le contrat lui-même est inchangé.
       operationId: assignerRelecteur
       parameters:
         - $ref: '#/components/parameters/ExerciceId'
@@ -438,6 +442,11 @@ paths:
         activité (Q16). Les exercices jamais relus restent visibles comme relectures en
         attente (Q11) et les présences ajoutées à la main sont distinguées (Q14).
         Le calcul se fait par requêtes agrégées, sans boucle par étudiant.
+
+        Changement de besoin (enveloppe étape 3, issue 16) : chaque ligne expose aussi
+        `exercicesSansRelecteur`, les identifiants des exercices restés sans relecteur
+        (RG10), pour que le formateur désigne un relecteur directement depuis l'écran
+        du tableau (RG18 complétée, RG23 pour la trace).
       operationId: obtenirTableau
       parameters:
         - name: promotionId
@@ -1053,6 +1062,18 @@ components:
           type: integer
           description: Relectures que l'étudiant doit encore rendre, y compris les exercices restés sans relecteur (Q11).
           example: 2
+        exercicesSansRelecteur:
+          type: array
+          items:
+            type: integer
+            format: int64
+          description: |
+            Identifiants des exercices de l'étudiant restés `SANS_RELECTEUR` (RG10), triés
+            par ordre croissant. Champ additif au contrat imposé, ajouté par le changement
+            de besoin de l'enveloppe étape 3 (issue 16) : le formateur désigne un
+            relecteur directement depuis l'écran du tableau (RG18 complétée). Liste vide
+            pour un étudiant sans exercice bloqué, jamais nulle.
+          example: [1017]
 
     Etudiant:
       type: object

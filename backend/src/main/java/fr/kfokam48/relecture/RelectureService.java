@@ -1,5 +1,7 @@
 package fr.kfokam48.relecture;
 
+import fr.kfokam48.audit.AuditAssignationManuelle;
+import fr.kfokam48.audit.AuditAssignationManuelleRepository;
 import fr.kfokam48.commun.erreur.CodeErreur;
 import fr.kfokam48.commun.erreur.ErreurMetier;
 import fr.kfokam48.commun.erreur.RessourceIntrouvableException;
@@ -46,6 +48,11 @@ import java.util.Optional;
  * tirage n'a trouve personne (§7.4). Exiger une presence rendrait l'endpoint inutile,
  * puisque le seul present est souvent l'auteur, de toute facon exclu par RG6. Seule
  * l'appartenance a la promotion est verifiee.</p>
+ *
+ * <p><b>Changement de besoin (enveloppe etape 3, issue 16)</b> : cette voie, autrefois
+ * reservee a un appel API direct, est desormais mise en oeuvre depuis l'ecran du tableau
+ * de bord — et chaque assignation manuelle reussie ecrit une trace d'audit (RG23) dans
+ * la meme transaction.</p>
  */
 @Service
 public class RelectureService {
@@ -53,24 +60,28 @@ public class RelectureService {
     private final ExerciceRepository exerciceRepository;
     private final EtudiantRepository etudiantRepository;
     private final RelectureRepository relectureRepository;
+    private final AuditAssignationManuelleRepository auditAssignationRepository;
     private final Clock horloge;
 
     public RelectureService(ExerciceRepository exerciceRepository,
                             EtudiantRepository etudiantRepository,
                             RelectureRepository relectureRepository,
+                            AuditAssignationManuelleRepository auditAssignationRepository,
                             Clock horloge) {
         this.exerciceRepository = exerciceRepository;
         this.etudiantRepository = etudiantRepository;
         this.relectureRepository = relectureRepository;
+        this.auditAssignationRepository = auditAssignationRepository;
         this.horloge = horloge;
     }
 
     /**
      * Designe a la main le relecteur d'un exercice reste sans relecteur (EF8, Q11).
      *
-     * <p>La relecture et le changement de statut de l'exercice appartiennent a la meme
-     * transaction : on ne peut pas observer un exercice {@code EN_ATTENTE} sans relecture,
-     * ni l'inverse.</p>
+     * <p>La relecture, le changement de statut de l'exercice et la trace d'audit
+     * appartiennent a la meme transaction : on ne peut pas observer un exercice
+     * {@code EN_ATTENTE} sans relecture, ni l'inverse, ni une assignation reussie
+     * sans trace (RG23).</p>
      *
      * @throws RessourceIntrouvableException 404 {@code EXERCICE_INTROUVABLE} ou {@code ETUDIANT_INCONNU}
      * @throws ErreurMetier 409 {@code RELECTURE_DEJA_ASSIGNEE} si un relecteur est deja designe
@@ -123,6 +134,13 @@ public class RelectureService {
 
         Relecture relecture = relectureRepository.saveAndFlush(
                 new Relecture(exercice, relecteur, AssignePar.FORMATEUR, maintenant));
+
+        // RG23 (enveloppe etape 3, issue 16) : chaque assignation manuelle reussie laisse
+        // une trace, dans la meme transaction. L'auteur de l'acte est designe par un
+        // etudiant de reference (aucune authentification : Q1, H1) ; le tirage
+        // automatique, lui, ne trace rien — assigne_par = SYSTEME l'atteste deja.
+        auditAssignationRepository.save(
+                new AuditAssignationManuelle(exercice, relecteur, relecteur, maintenant));
 
         return RelectureAssignee.depuis(relecture);
     }
@@ -271,11 +289,6 @@ public class RelectureService {
         return RelectureRendue.depuis(relecture);
     }
 
-    /**
-     * Deux refus possibles derriere le meme statut {@code 409}, et le contrat les
-     * distingue : une relecture en attente est un relecteur deja designe, une relecture
-     * rendue est une note deja envoyee — donc definitive (Q15, RG12).
-     */
     /**
      * Convertit la note recue en entier strict, ou renvoie {@code null} si elle est
      * absente ou decimale : c'est le service, et non la liaison JSON, qui tranche entre
