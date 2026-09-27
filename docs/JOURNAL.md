@@ -570,3 +570,24 @@ spring-boot:run` a coupé le shell lui-même (motif trop large), sans conséquen
 depuis un clone vierge** ; le CHANGELOG cite les totaux de tests mesurés à chaque
 jalon (143 puis 149) et chaque entrée renvoie à des commits vérifiables ; le jalon
 `[JALON] v1.0` est posé en dernier commit, son hash est reporté dans SOUMISSION.md.
+
+---
+
+## Étape 5 — fiche de soumission
+
+### Fiche de soumission
+
+**Fait :** vérifications préalables : dépôt confirmé **public** par accès totalement
+anonyme (API et page HTML en 200 sans aucun identifiant — équivalent navigation
+privée, `"private": false`) ; hash déclaré confirmé égal au jalon `[JALON] v1.0`
+(`2cef725c6a371c928ae00dfbd4d2776fe36b37d0`). Identité de la fiche fixée avec le
+candidat : Candidat-KF48-YAO-249 / KF48-YAO-249 / Yaoundé — cohérente avec l'anonymat
+du projet. `SOUMISSION.md` remplacé par le squelette imposé de l'étape 5, rempli avec
+les vraies valeurs (React ; les 3 commandes exactes du README testées au clone
+vierge). La fiche est poussée après le jalon : c'est l'exception prévue par la
+consigne, la correction portant exactement sur le commit déclaré.
+
+**Blocage :** aucun.
+
+**Vérification :** plus rien n'est poussé après ce commit, sauf mise à jour explicite
+du hash dans SOUMISSION.md.
