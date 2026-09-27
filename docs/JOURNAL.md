@@ -535,3 +535,38 @@ CDC (RG18 complétée, **RG23 créée**, §7.4 mis à jour), D2 en 1.1 (huitièm
 « mise à jour de l'analyse suite au changement de besoin (enveloppe étape 3) ». La
 repriorisation du backlog est documentée dans `docs/REPRIORISATION_BACKLOG.md`
 (point 6 du protocole).
+
+---
+
+## Étape 4 — finalisation
+
+### Finalisation
+
+**Fait :** (1) Vérifications d'historique : aucun `target/`, `node_modules/`, `dist/`,
+`.env` ni jar/class dans tout l'historique (`git log --all --full-history`) ; lockfile
+`package-lock.json` tracké volontairement ; 44 des 46 commits signés
+`Candidat-KF48-YAO-249` — les 2 commits de fusion de l'étape 3 (3af5f55, 1201d3e)
+portent l'identité du compte de dépôt, car créés via l'API GitHub ; leur réécriture
+exigerait un `push --force` sur `main`, interdit par la convention du projet — la
+décision de les laisser est assumée et documentée dans le CHANGELOG. (2) README réécrit
+(prérequis Java 17/Node 18+, « pourquoi React » en une ligne, suppression des doublons,
+V3 dans la structure, confirmation du seed automatique) puis **testé depuis un clone
+vierge réel** : nouveau dossier, `git clone` depuis GitHub, `./mvnw spring-boot:run`
+(API prête en ~6 s, seed 16 étudiants présent, champ V3 au tableau), flux réel de bout
+en bout (session ouverte, code A3K7E5, présence 201, tableau `presences:1`), puis
+`npm install` + `npm run build` verts ; clone de test supprimé. (3) CHANGELOG créé,
+aligné sur la chronologie réelle des commits et jalons (`[JALON] analyse`, v0.1,
+étape 3, v1.0), ne listant que le réellement livré. (4) Tri du backlog : les Should
+#4, #6, #11 sont livrées, aucune issue obsolète à fermer, les évolutions éventuelles
+restent explicitées dans `docs/REPRIORISATION_BACKLOG.md` ; 18/18 issues fermées, 0
+ouverte. (5) `main` sain : `./mvnw verify` → **149 tests** (43 + 106) verts,
+`npm run build` vert.
+
+**Blocage :** ~10 min : le premier test de flux a échoué (backend déjà arrêté par le
+`pkill` de la même commande) — relance propre, test concluant ; et un `pkill -f
+spring-boot:run` a coupé le shell lui-même (motif trop large), sans conséquence.
+
+**Vérification :** le README documente désormais des commandes **réellement exécutées
+depuis un clone vierge** ; le CHANGELOG cite les totaux de tests mesurés à chaque
+jalon (143 puis 149) et chaque entrée renvoie à des commits vérifiables ; le jalon
+`[JALON] v1.0` est posé en dernier commit, son hash est reporté dans SOUMISSION.md.
