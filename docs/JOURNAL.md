@@ -502,3 +502,25 @@ La Javadoc du record explique désormais le pourquoi du retrait.
 **Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **144 tests**
 (43 unitaires + 101 IT), dont `RemplacementLienIT` 9/9 avec le nouveau test vert :
 lien vide → `400 LIEN_INVALIDE`, ancien lien conservé en base, aucun champ `trace`.
+
+### Issue #16 — le tableau expose les exercices sans relecteur, chaque désignation laisse une trace
+
+**Fait :** trois commits séparés, un par idée. (1) Migration **V3**
+`audits_assignation_manuelle` + entité/repository dans un package `audit` dédié.
+(2) Backend : `LigneTableau` gagne le champ additif `exercicesSansRelecteur`
+(identifiants des exercices `SANS_RELECTEUR` de l'étudiant) ; l'assignation manuelle
+réussie écrit sa trace d'audit (RG23) dans la même transaction, un refus n'en écrit
+pas. (3) Le parcours client complet est vérifié par la nouvelle IT
+`DesignationDepuisTableauIT` (tableau → désignation → tableau, 403 auteur,
+403 hors-promotion, audit présent/après, absent/avant).
+
+**Blocage :** ~20 min sur un refus d'Hibernate : une sous-requête multi-lignes dans un
+constructeur `SELECT new` produit un 500 au lieu du tableau. Corrigé par une seconde
+requête dédiée (couples étudiant/exercice, une seule passe) assemblée en mémoire dans
+`TableauService` — la contrainte ENF8 (pas de boucle de requêtes par étudiant) reste
+respectée, le coût reste en nombre fixe de requêtes.
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **149 tests**
+(43 unitaires + 106 IT), dont `TableauControllerIT` 8/8 (champs du contrat 8 → 9
+ajustés, listes vides pour les étudiants sans exercice bloqué) et
+`DesignationDepuisTableauIT` 3/3.

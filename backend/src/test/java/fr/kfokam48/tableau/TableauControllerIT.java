@@ -120,10 +120,34 @@ class TableauControllerIT {
 
         assertThat(lignes).hasSize(12); // la promotion 1 compte 12 etudiants (V2)
 
-        // Champs du contrat, et strictement rien d'autre.
+        // Champs du contrat, et strictement rien d'autre. exercicesSansRelecteur est
+        // le champ additif du changement de besoin (enveloppe etape 3, issue 16).
         assertThat(lignes.get(0).fieldNames()).toIterable()
                 .containsExactlyInAnyOrder("etudiantId", "nom", "prenom", "presences",
-                        "presencesFormateur", "exercicesDeposes", "moyenne", "relecturesEnAttente");
+                        "presencesFormateur", "exercicesDeposes", "moyenne", "relecturesEnAttente",
+                        "exercicesSansRelecteur");
+    }
+
+    @Test
+    @DisplayName("l'exercice reste sans relecteur est expose sur la ligne de l'auteur (issue 16)")
+    void expose_les_exercices_sans_relecteur_sur_la_ligne_de_l_auteur() throws Exception {
+        JsonNode ligne = ligneDe(AUTEUR_RELU);
+
+        // Le second depot de l'etat de demonstration (session 2, personne present)
+        // est reste SANS_RELECTEUR : la ligne du formateur le montre, sans autre
+        // information sur l'exercice que son identifiant.
+        assertThat(ligne.get("exercicesSansRelecteur").isArray()).isTrue();
+        assertThat(ligne.get("exercicesSansRelecteur")).hasSize(1);
+        assertThat(ligne.get("exercicesSansRelecteur").get(0).asLong()).isPositive();
+    }
+
+    @Test
+    @DisplayName("les etudiants sans exercice bloque ont une liste vide (issue 16)")
+    void expose_une_liste_vide_pour_les_etudiants_sans_exercice_bloque() throws Exception {
+        JsonNode ligne = ligneDe(RELECTEUR);
+
+        assertThat(ligne.get("exercicesSansRelecteur").isArray()).isTrue();
+        assertThat(ligne.get("exercicesSansRelecteur")).isEmpty();
     }
 
     @Test
