@@ -523,4 +523,10 @@ respectée, le coût reste en nombre fixe de requêtes.
 **Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **149 tests**
 (43 unitaires + 106 IT), dont `TableauControllerIT` 8/8 (champs du contrat 8 → 9
 ajustés, listes vides pour les étudiants sans exercice bloqué) et
-`DesignationDepuisTableauIT` 3/3.
+`DesignationDepuisTableauIT` 3/3. Puis contrat et frontend : `api/contrat.yaml`
+documente le champ additif `exercicesSansRelecteur` (LigneTableau) et l'usage écran de
+la désignation (RG23, migration V3) ; `types.ts` aligné, `api/tableau.ts` gagne
+`designerRelecteur`, `TableauDeBord.tsx` propose sur chaque exercice bloqué la
+sélection d'un relecteur autre que l'auteur (messages 403/409 de l'API affichés tels
+quels, tableau rechargé après succès, moyenne jamais recalculée). `cd frontend &&
+npm run build` → `tsc --noEmit` strict puis build Vite réussis.

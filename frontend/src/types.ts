@@ -67,6 +67,20 @@ export interface ExerciceCree {
   statut: StatutExercice
 }
 
+/** Corps de `PUT /api/exercices/{id}`. */
+export interface DemandeRemplacementLien {
+  lien: string
+}
+
+/** Schema `ExerciceDetail` du contrat : reponse du remplacement de lien (Q13). */
+export interface ExerciceDetail {
+  id: number
+  sessionId: number
+  statut: StatutExercice
+  lien: string
+  relectureCommencee: boolean
+}
+
 /** Etat d'une relecture tel qu'expose par le contrat. */
 export type StatutRelecture = 'EN_ATTENTE' | 'RENDUE'
 
@@ -104,7 +118,24 @@ export interface RelectureRendue {
   renduAt: string
 }
 
-/** Schema `LigneTableau` du contrat : une ligne par etudiant de la promotion (Q16). */
+/** Corps de `POST /api/exercices/{id}/relecteur` : designation manuelle (Q11). */
+export interface DemandeAssignationRelecteur {
+  relecteurId: number
+}
+
+/** Schema `RelectureAssignee` du contrat : reponse de la designation manuelle. */
+export interface RelectureAssignee {
+  id: number
+  exerciceId: number
+  statut: StatutRelecture
+  assignePar: 'SYSTEME' | 'FORMATEUR'
+}
+
+/**
+ * Schema `LigneTableau` du contrat : une ligne par etudiant de la promotion (Q16).
+ * `exercicesSansRelecteur` est le champ additif du changement de besoin (enveloppe
+ * etape 3, issue 16) : le formateur designe un relecteur directement sur la ligne.
+ */
 export interface LigneTableau {
   etudiantId: number
   nom: string
@@ -115,4 +146,6 @@ export interface LigneTableau {
   /** Moyenne des notes recues, calculee par l'API (RG18) — jamais par le client. */
   moyenne: number
   relecturesEnAttente: number
+  /** Identifiants des exercices restes SANS_RELECTEUR (RG10) ; liste vide, jamais nulle. */
+  exercicesSansRelecteur: number[]
 }
