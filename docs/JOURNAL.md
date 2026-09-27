@@ -481,3 +481,24 @@ d'audit complet du backend et du frontend avant rédaction.
 
 **Vérification :** le bug est démontrable par un simple appel curl et sera d'abord
 prouvé par un test d'intégration rouge (voir entrée suivante).
+
+### Issue #15 — le lien vide répond `LIEN_INVALIDE` comme le promet le contrat
+
+**Fait :** reproduction par **test rouge d'abord** : nouveau test IT
+`repond_lien_invalide_pour_un_lien_vide` dans `RemplacementLienIT` — échec attendu et
+obtenu (`JSON path "$.code" expected:<LIEN_INVALIDE> but was:<CHAMP_MANQUANT>`),
+démonstration exacte du bug de l'enveloppe. Puis correctif minimal et localisé :
+suppression de `@NotBlank` sur `DemandeRemplacementLien`, de sorte que tout lien vide
+traverse la couche HTTP et soit validé par le service (`ValidateurLien`), qui renvoie
+déjà `400 LIEN_INVALIDE` — alignement sur la décision de conception du dépôt
+(Javadoc `DemandeDepotExercice`) et sur le contrat, qui ne documente qu'un seul 400
+pour cette opération. Le contrat n'est pas modifié : il fait foi. Aucun autre
+comportement touché (le dépôt répond toujours `LIEN_INVALIDE` pour un lien vide).
+La Javadoc du record explique désormais le pourquoi du retrait.
+
+**Blocage :** aucun. (~5 min d'adaptation du filtre surefire :
+`-Dsurefire.failIfNoSpecifiedTests=false` pour isoler un seul test IT.)
+
+**Vérification :** `cd backend && ./mvnw verify` → BUILD SUCCESS, **144 tests**
+(43 unitaires + 101 IT), dont `RemplacementLienIT` 9/9 avec le nouveau test vert :
+lien vide → `400 LIEN_INVALIDE`, ancien lien conservé en base, aucun champ `trace`.
