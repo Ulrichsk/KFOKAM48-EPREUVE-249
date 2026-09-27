@@ -33,6 +33,18 @@ Tous les renvois pointent vers `docs/CAHIER_DES_CHARGES.md` (EFx, RGx, §x) et
 Les issues `06` et `09` sont liées : le remplacement du lien n'est vérifiable que si la
 consultation du lien est tracée (`lien_consulte_at`).
 
+## Mise à jour après l'étape 3 (issues 15 et 16, enveloppe)
+
+Les 14 issues ci-dessus sont livrées et fermées. L'enveloppe de l'étape 3 a ajouté deux
+issues **Must** traitées immédiatement, et la repriorisation complète est documentée
+ dans [`../REPRIORISATION_BACKLOG.md`](../REPRIORISATION_BACKLOG.md) :
+
+- **#15** (bug) : le remplacement d'un lien vide répondait `CHAMP_MANQUANT` au lieu du
+  `LIEN_INVALIDE` promis par le contrat — corrigé par test rouge puis correctif ;
+- **#16** (changement de besoin) : désigner un relecteur aux exercices restés sans
+  relecteur directement depuis l'écran du tableau — le déblocage manuel (RG10) devient
+  opérant depuis l'écran, avec trace d'audit (RG23, migration V3).
+
 ## Convention Git associée
 
 Une branche par issue (`feat/#N-slug`), une PR par branche, un message de commit qui ferme
