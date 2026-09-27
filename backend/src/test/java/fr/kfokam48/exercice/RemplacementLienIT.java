@@ -179,6 +179,33 @@ class RemplacementLienIT {
                 .isEqualTo(LIEN_INITIAL);
     }
 
+    // ------------------------------------------------------------------ lien vide (issue 15)
+
+    @Test
+    @DisplayName("lien vide : 400 LIEN_INVALIDE (contrat), jamais CHAMP_MANQUANT (issue 15)")
+    void repond_lien_invalide_pour_un_lien_vide() throws Exception {
+        long exerciceId = creerExerciceAvecRelecteur();
+
+        // Le contrat ne documente qu'un seul 400 pour cette operation : LIEN_INVALIDE
+        // (reference LienInvalide). Un lien vide n'est pas une URL valide http/https,
+        // il releve donc de cette reponse — pas de CHAMP_MANQUANT, qui n'y figure pas.
+        // La decision de conception posee sur le depot (Javadoc de
+        // DemandeDepotExercice) est la meme : le service valide, un seul code.
+        mockMvc.perform(put("/api/exercices/{id}", exerciceId)
+                        .header("X-Etudiant-Id", AUTEUR)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                { "lien": "" }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("LIEN_INVALIDE"))
+                .andExpect(jsonPath("$.trace").doesNotExist());
+
+        // L'ancien lien reste en place : la demande invalide n'a rien modifie.
+        assertThat(exerciceRepository.findById(exerciceId).orElseThrow().getLien())
+                .isEqualTo(LIEN_INITIAL);
+    }
+
     // ------------------------------------------------------------------ erreurs de forme et 404
 
     @Test
