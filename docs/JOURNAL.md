@@ -458,3 +458,26 @@ exercice inconnu et étudiant inconnu donnent `400 CHAMP_MANQUANT`, `404 EXERCIC
 `404 ETUDIANT_INCONNU`. `cd frontend && npm run build` → `tsc --noEmit` strict puis build Vite
 réussis, sans aucun changement frontend : l'écran de déblocage dépend de la liste du tableau de
 bord, qui appartient à l'issue 12.
+
+---
+
+## Étape 3 — enveloppe (bug + changement de besoin)
+
+### Enveloppe
+
+**Fait :** l'enveloppe du surveillant n'est jamais parvenue avec son contenu (trois envois
+réduits aux placeholders vides). Sur instruction du candidat, le contenu a été
+**reconstruit localement** par audit du code de l'étape 2 et consigné dans
+`docs/enveloppes/enveloppe-etape3.md`, avec provenance explicitée en tête de fichier et
+scénario de reproduction vérifiable : le bug est une divergence contrat/implémentation
+réelle (`PUT /api/exercices/{id}` : lien vide → `CHAMP_MANQUANT` au lieu du
+`LIEN_INVALIDE` promis par `contrat.yaml`, car `@NotBlank` intercepte avant le service) ;
+le changement de besoin rend opérant le déblocage manuel des exercices `SANS_RELECTEUR`
+depuis l'écran du tableau (l'endpoint `POST /api/exercices/{id}/relecteur` existait sans
+aucun écran, et le tableau n'exposait pas les exercices sans relecteur). ~40 min
+d'audit complet du backend et du frontend avant rédaction.
+
+**Blocage :** aucun.
+
+**Vérification :** le bug est démontrable par un simple appel curl et sera d'abord
+prouvé par un test d'intégration rouge (voir entrée suivante).
